@@ -1,0 +1,43 @@
+.sidebar {
+  position: fixed;
+  z-index: 3;
+  inset: 0 auto 0 0;
+  display: flex;
+  width: var(--sidebar-width);
+  flex-direction: column;
+  padding: 25px 16px 16px;
+  background: var(--color-navy);
+  color: #dbe2f2;
+}
+.brand { display: flex; align-items: center; gap: 10px; padding: 0 8px; color: #fff; }
+.brandMark { display: grid; width: 31px; height: 31px; place-items: center; border-radius: 9px; background: linear-gradient(145deg, #6678f8, #806cf3); }
+.brandName { font-size: 17px; font-weight: 700; }
+.brandName span { color: #9286ff; }
+.workspaceLabel, .navLabel { color: #77829d; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; }
+.workspaceLabel { margin: 39px 9px 10px; }
+.workspacePicker { display: flex; min-height: 43px; align-items: center; gap: 10px; padding: 0 10px; border: 1px solid rgb(255 255 255 / 9%); border-radius: 7px; background: rgb(255 255 255 / 4%); }
+.workspaceIcon { display: grid; width: 25px; height: 25px; place-items: center; border-radius: 6px; background: #273552; color: #a6b3d0; }
+.workspaceName { flex: 1; overflow: hidden; color: #e4e9f4; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.workspaceMenu { color: #8792aa; font-size: 16px; letter-spacing: 1px; }
+.nav { display: flex; flex-direction: column; gap: 4px; margin-top: 37px; }
+.navLabel { margin: 0 10px 9px; }
+.navLink { display: flex; min-height: 41px; align-items: center; gap: 11px; padding: 0 11px; border-radius: 7px; color: #aab4ca; font-size: 12px; transition: background 150ms ease, color 150ms ease; }
+.navLink:hover { background: rgb(255 255 255 / 6%); color: #fff; }
+.active, .active:hover { background: #263453; color: #fff; }
+.active::before { position: absolute; left: 0; width: 3px; height: 24px; border-radius: 0 3px 3px 0; background: #8792ff; content: ""; }
+.sidebarFooter { display: flex; align-items: center; gap: 10px; margin-top: auto; padding: 13px 8px 4px; border-top: 1px solid rgb(255 255 255 / 9%); }
+.avatar { display: grid; width: 31px; height: 31px; place-items: center; border-radius: 50%; background: #394665; color: #e5e9f6; font-size: 10px; font-weight: 700; }
+.profileText { display: grid; flex: 1; gap: 3px; font-size: 11px; }
+.profileText strong { color: #e7ebf5; font-weight: 600; }
+.profileText span { color: #8d98af; font-size: 10px; }
+.onlineDot { width: 7px; height: 7px; border-radius: 50%; background: #56bd94; }
+@media (max-width: 760px) {
+  .sidebar { position: sticky; inset: 0 auto auto; width: 100%; height: auto; padding: 12px 14px 10px; }
+  .brand { padding: 0 2px 11px; }
+  .workspaceLabel, .workspacePicker, .navLabel, .sidebarFooter { display: none; }
+  .nav { flex-direction: row; gap: 4px; overflow-x: auto; margin: 0; scrollbar-width: none; }
+  .nav::-webkit-scrollbar { display: none; }
+  .navLink { min-height: 36px; flex: 0 0 auto; gap: 7px; padding: 0 9px; font-size: 11px; }
+  .navLink svg { width: 15px; }
+  .active::before { display: none; }
+}

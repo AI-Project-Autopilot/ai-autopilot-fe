@@ -1,0 +1,65 @@
+:root {
+  color-scheme: light;
+  --color-ink: #17213a;
+  --color-muted: #727d92;
+  --color-canvas: #f4f6fa;
+  --color-surface: #fff;
+  --color-line: #e7eaf0;
+  --color-line-strong: #d7dce6;
+  --color-navy: #111a31;
+  --color-blue: #536cf4;
+  --color-blue-dark: #4058df;
+  --color-violet: #806cf3;
+  --color-green: #248367;
+  --color-green-soft: #e8f5f0;
+  --color-amber: #a36a18;
+  --color-amber-soft: #fff4df;
+  --color-blue-soft: #edf0ff;
+  --color-radius-sm: 7px;
+  --color-radius-md: 11px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --sidebar-width: 248px;
+}
+
+* { box-sizing: border-box; }
+
+html, body { min-height: 100%; margin: 0; }
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: "Avenir Next", Avenir, "Segoe UI", sans-serif;
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+
+button, input, select, textarea { font: inherit; }
+button, a, select, textarea { -webkit-tap-highlight-color: transparent; }
+a { color: inherit; text-decoration: none; }
+
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 3px solid rgb(83 108 244 / 38%);
+  outline-offset: 3px;
+}
+
+::selection { background: rgb(83 108 244 / 18%); }
+
+@keyframes enter {
+  from { opacity: 0; transform: translateY(7px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

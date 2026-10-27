@@ -1,0 +1,8 @@
+.workspace { min-height: 100vh; }
+.contentColumn { min-height: 100vh; margin-left: var(--sidebar-width); }
+.main { width: min(100%, 1480px); min-height: calc(100vh - 64px); margin: 0 auto; padding: 39px 40px 64px; animation: enter 340ms ease both; }
+@media (max-width: 1000px) { .main { padding: 30px 26px 52px; } }
+@media (max-width: 760px) {
+  .contentColumn { margin-left: 0; }
+  .main { min-height: calc(100vh - 115px); padding: 25px 17px 40px; }
+}
