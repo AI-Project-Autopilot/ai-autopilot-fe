@@ -1,6 +1,6 @@
 # AI Project Autopilot
 
-An independent frontend workspace for planning repository improvements with AI. This project is not based on or copied from the Codeit/MoonShot frontend. GitHub and model-provider integrations are intentionally not connected yet.
+An independent frontend workspace for planning repository improvements with AI. This project is not based on or copied from the Codeit/MoonShot frontend. GitHub OAuth is handled by the backend; the frontend uses an HttpOnly session cookie and never stores GitHub credentials or tokens.
 
 ## Requirements
 
@@ -22,7 +22,7 @@ npx tsc --noEmit
 npm run build
 ```
 
-Copy `.env.example` to `.env.local` when preparing a local backend connection. Keep server credentials server-side; never add GitHub or Meta API keys to `NEXT_PUBLIC_*` variables.
+Copy `.env.example` to `.env.local` when preparing a local backend connection. `NEXT_PUBLIC_API_BASE_URL` is the backend origin and defaults to `http://localhost:4000`. Keep server credentials server-side; never add GitHub or Meta API keys to `NEXT_PUBLIC_*` variables. Set the backend's `GITHUB_REDIRECT_URI` to `http://localhost:3000/auth/github/callback` and `AUTOPILOT_FRONTEND_URL` to `http://localhost:3000/connect/github`. The FE callback route forwards GitHub's callback query to the backend at `/api/auth/github/callback`; OAuth token exchange remains on the backend.
 
 ## Routes
 
@@ -32,6 +32,8 @@ Copy `.env.example` to `.env.local` when preparing a local backend connection. K
 - `/analyze`
 - `/plans/[planId]`
 - `/plans/[planId]/execution`
+- `/connect/github`
+- `/auth/github/callback`
 
 Workspace routes live in the `(workspace)` route group, which is not part of their URLs.
 
@@ -39,7 +41,9 @@ Workspace routes live in the `(workspace)` route group, which is not part of the
 
 Application code is under `src/`: `app/` contains the App Router, `components/` contains shared layout and UI, `features/` contains screen-level UI, `lib/api/` defines the proposed backend contract, `lib/mock/` provides replaceable demo data, and `types/` contains proposed domain types.
 
-The TypeScript API types are proposals only. The backend response format has not been agreed. `AutopilotApi` is the replacement boundary; the current `mockAutopilotApi` implementation can later be swapped for a server-side HTTP client without changing feature screens.
+`/connect/github` uses OAuth App login, the backend session, and `GET /api/github/repositories?page=1` to show the connected account's real repositories. It supports selection, pagination, refresh, and reconnecting when a session or GitHub token expires. GitHub App installation is not part of this flow. The selected repository can be analyzed from this screen with an optional development goal. `POST /api/github/repositories/{id}/analysis` sends that repository's README and selected source portions to the backend's Meta model and returns a summary, prioritized development recommendations, implementation steps, acceptance criteria, and file/line evidence pinned to the analyzed commit. Results show the files read and omitted-context warnings. Analysis only starts when the user presses the analysis button; changing repositories or logging out discards the current result. The other workspace screens remain separate demos.
+
+Public and private repository access is granted through GitHub's OAuth consent screen. Existing connections without private repository access show a reconnect prompt. OAuth's `repo` scope includes read and write access to private repositories; there is no list-only private-repository scope.
 
 ## Dependencies and assets
 

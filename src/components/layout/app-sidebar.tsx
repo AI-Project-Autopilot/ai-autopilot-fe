@@ -11,6 +11,7 @@ const navigation = [
   { href: "/analyze", label: "New analysis", icon: CirclePlus },
   { href: "/plans/demo-plan", label: "Development plan", icon: ListChecks },
   { href: "/plans/demo-plan/execution", label: "Execution log", icon: Activity },
+  { href: "/connect/github", label: "Connect GitHub", icon: GitBranch },
 ];
 
 export function AppSidebar() {
