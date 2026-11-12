@@ -1,0 +1,38 @@
+.panelAnchor { min-width: 0; scroll-margin-top: 88px; }
+.panel { padding: 25px; background: linear-gradient(155deg, #fff 50%, #f5f6ff); }
+.icon { display: grid; width: 42px; height: 42px; place-items: center; margin-bottom: 23px; border: 1px solid #e0e5fd; border-radius: 12px; background: #edf0ff; color: #6575d9; }
+.eyebrow { margin: 0 0 8px; color: #8995b2; font-size: 9px; font-weight: 700; letter-spacing: 1px; }
+.panel h2 { margin: 0; color: #2e3d5d; font-size: 18px; font-weight: 650; letter-spacing: -.5px; }
+.description { margin: 12px 0 21px; color: #8a96ab; font-size: 11px; line-height: 1.9; word-break: keep-all; }
+.repository { display: grid; min-width: 0; gap: 10px; padding: 16px; border: 1px solid #e2e7f8; border-radius: 8px; background: #fafbff; }
+.selectedLabel { display: inline-flex; align-items: center; gap: 5px; color: #7a87b5; font-size: 9px; font-weight: 600; }
+.repository > strong { color: #384969; font-size: 12px; font-weight: 650; line-height: 1.6; overflow-wrap: anywhere; }
+.branch { display: inline-flex; min-width: 0; align-items: center; gap: 5px; color: #8996b0; font-size: 10px; overflow-wrap: anywhere; }
+.branch svg { flex: 0 0 auto; }
+.repository > a { display: inline-flex; width: fit-content; align-items: center; gap: 5px; margin-top: 2px; color: #6379cd; font-size: 10px; }
+.repository > a:hover { color: #4058df; text-decoration: underline; }
+.goalField { display: grid; gap: 9px; margin-top: 23px; }
+.goalField > label { display: flex; align-items: center; gap: 8px; color: #526079; font-size: 11px; font-weight: 650; }
+.goalField small { color: #9aa3b6; font-size: 9px; font-weight: 400; }
+.goalField textarea { width: 100%; min-height: 113px; padding: 12px; resize: vertical; border: 1px solid #dfe4ef; border-radius: 7px; background: #fff; color: #47546d; font-size: 11px; line-height: 1.8; }
+.goalField textarea::placeholder { color: #a0a9bc; }
+.goalField textarea:disabled { background: #f7f8fb; color: #8c96a9; }
+.goalHelp { display: grid; gap: 5px; color: #9aa4b9; font-size: 9px; line-height: 1.7; }
+.goalHelp > span:last-child { justify-self: end; color: #a6afbf; }
+.consent { margin: 19px 0 15px; padding-top: 16px; border-top: 1px solid #e8ebf5; color: #99a2b6; font-size: 9px; line-height: 1.9; word-break: keep-all; }
+.analyzeButton { width: 100%; min-height: 41px; gap: 8px; font-size: 11px; }
+.analyzeButton > svg:last-child { margin-left: auto; }
+.analyzeButton > svg:first-child { margin-right: auto; }
+.progress { display: grid; justify-items: center; gap: 2px; margin-top: 10px; }
+.progress > p { margin: 4px 0; color: #8c98b0; font-size: 10px; line-height: 1.8; text-align: center; }
+.progress > button { font-size: 10px; }
+.error { margin: 13px 0 0; padding: 12px; border: 1px solid #f0d8dc; border-radius: 7px; background: #fff6f7; color: #a16170; font-size: 10px; line-height: 1.8; word-break: keep-all; }
+.empty { display: grid; justify-items: center; gap: 11px; padding: 23px 8px 30px; border: 1px dashed #dfe4f0; border-radius: 8px; background: rgb(250 251 255 / 65%); text-align: center; }
+.emptyIcon { display: grid; width: 45px; height: 45px; place-items: center; margin-bottom: 4px; border-radius: 50%; background: #f0f3fc; color: #a2afcd; }
+.empty > strong { color: #7584a4; font-size: 11px; font-weight: 550; }
+.empty > p { max-width: 220px; margin: 0; color: #a3adc0; font-size: 10px; line-height: 1.8; word-break: keep-all; }
+.controlNote { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 22px; color: #9ba6bc; font-size: 9px; }
+.controlNote svg { color: #7ba795; flex: 0 0 auto; }
+.spin { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (max-width: 760px) { .panelAnchor { scroll-margin-top: 175px; } .panel { padding: 22px; } .icon { margin-bottom: 17px; } .description { font-size: 12px; } .empty { min-height: 180px; padding-top: 22px; } .goalField textarea { font-size: 12px; } }

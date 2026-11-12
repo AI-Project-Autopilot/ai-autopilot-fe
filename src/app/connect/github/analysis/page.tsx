@@ -102,8 +102,8 @@ function GithubAnalysisResult() {
           <h1>저장소 분석 결과</h1>
 
           {state === "loading" && <div className={styles.loading} role="status"><LoaderCircle className={styles.spin} size={18} /> 분석 결과를 불러오고 있어요…</div>}
-          {state === "missing" && <div className={styles.alert} role="alert">이 브라우저 세션에서 분석 결과를 찾을 수 없습니다. 저장소 화면에서 다시 분석해 주세요.</div>}
-          {state === "invalid" && <div className={styles.alert} role="alert">분석 결과를 표시할 수 없습니다. 저장소 화면에서 다시 분석해 주세요.</div>}
+          {state === "missing" && <div className={styles.alert} role="alert">이 브라우저 세션에서 분석 결과를 찾을 수 없습니다. 대시보드에서 저장소를 선택해 다시 분석해 주세요.</div>}
+          {state === "invalid" && <div className={styles.alert} role="alert">분석 결과를 표시할 수 없습니다. 대시보드에서 저장소를 선택해 다시 분석해 주세요.</div>}
 
           {analysis && state === "ready" && <section className={styles.analysisResults} aria-labelledby="analysis-results-heading">
             <div className={styles.resultHeading}>
@@ -138,7 +138,7 @@ function GithubAnalysisResult() {
             </div>}
           </section>}
 
-          <Link className={styles.secondaryButton} href="/connect/github"><ArrowLeft size={16} /> 저장소 화면으로</Link>
+          <Link className={styles.secondaryButton} href="/dashboard#repositories"><ArrowLeft size={16} /> 대시보드에서 저장소 선택하기</Link>
         </div>
         <footer className={styles.footer}><ShieldCheck size={16} /> 분석 결과는 현재 브라우저 탭에만 보관됩니다. <Link href="/dashboard">대시보드로 이동</Link></footer>
       </div>

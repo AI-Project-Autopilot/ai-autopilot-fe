@@ -27,10 +27,10 @@ Copy `.env.example` to `.env.local` when preparing a local backend connection. `
 ## Routes
 
 - `/` introduces the service and links to GitHub connection
-- `/dashboard` checks the backend session before loading real GitHub repository data
-- `/repositories` redirects to `/connect/github`
-- `/analyze` redirects to `/connect/github`
-- `/connect/github`
+- `/dashboard` checks the backend session, then loads real GitHub repositories for selection and analysis
+- `/repositories` redirects to `/dashboard#repositories`
+- `/analyze` redirects to `/dashboard#analysis`
+- `/connect/github` handles GitHub sign-in and automatically returns authenticated users to `/dashboard`
 - `/connect/github/analysis` shows the current account's analysis from this browser tab after checking the session
 - `/auth/github/callback`
 
@@ -40,9 +40,11 @@ Workspace routes live in the `(workspace)` route group, which is not part of the
 
 Application code is under `src/`: `app/` contains the App Router, `components/` contains shared authentication, layout, and UI, `features/` contains screen-level UI, `lib/api/` defines the backend contract, and `types/` contains domain types. The old demo views and fixtures are unused; the former `/plans/[planId]` and execution demo routes return 404 until real plan persistence is available.
 
-`/connect/github` uses OAuth App login, the backend session, and `GET /api/github/repositories?page=1` to show the connected account's real repositories. It supports selection, pagination, refresh, and reconnecting when a session or GitHub token expires. GitHub App installation is not part of this flow. The selected repository can be analyzed from this screen with an optional development goal. `POST /api/github/repositories/{id}/analysis` sends that repository's README and selected source portions to the backend's Meta model and returns a summary, prioritized development recommendations, implementation steps, acceptance criteria, and file/line evidence pinned to the analyzed commit. Results show the files read and omitted-context warnings. Analysis only starts when the user presses the analysis button; changing repositories or logging out discards the current result.
+`/connect/github` is the OAuth App sign-in screen. It checks the backend session and replaces the current route with `/dashboard` after authentication. The backend's `AUTOPILOT_FRONTEND_URL` remains `/connect/github`; no backend redirect change is required. GitHub App installation is not part of this flow. Simply entering the connection screen while signed in preserves the current account's cached analysis.
 
-`/dashboard` shows a login prompt until `GET /api/auth/me` confirms the session. It then loads the first repository page, shows counts explicitly limited to that page and up to five repositories, and uses the browser's current local date. Empty, loading, permission, and network-error states never fall back to sample data. A 401 response clears the visible workspace and prompts login again. The public landing page does not fetch account data.
+`/dashboard` shows a login prompt until `GET /api/auth/me` confirms the session. It then loads the connected account's real repositories using `GET /api/github/repositories?page=1`, with selection, pagination, refresh, and reconnection for expired access. Counts describe the repositories loaded so far, and dates use the browser's current local date and API-provided update times. Empty, loading, permission, and network-error states never fall back to sample data. A 401 response clears the visible workspace and prompts login again. The public landing page does not fetch account data.
+
+The selected repository can be analyzed directly on the dashboard with an optional development goal. `POST /api/github/repositories/{id}/analysis` sends that repository's README and selected source portions to the backend's Meta model and returns a summary, prioritized development recommendations, implementation steps, acceptance criteria, and file/line evidence pinned to the analyzed commit. Results at `/connect/github/analysis` show the files read and omitted-context warnings, and return users to dashboard repository selection. Analysis only starts when the user presses the analysis button; changing repositories or logging out discards the current result. Results are stored only in this browser tab and displayed only after the current account is verified.
 
 Public and private repository access is granted through GitHub's OAuth consent screen. Existing connections without private repository access show a reconnect prompt. OAuth's `repo` scope includes read and write access to private repositories; there is no list-only private-repository scope.
 

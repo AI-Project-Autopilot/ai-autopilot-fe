@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
 export default function RepositoriesPage() {
-  redirect("/connect/github");
+  redirect("/dashboard#repositories");
 }
