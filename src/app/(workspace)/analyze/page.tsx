@@ -1,6 +1,5 @@
-import { AnalyzeView } from "@/features/analysis/analyze-view";
-import { mockAutopilotApi } from "@/lib/mock/autopilot-api";
+import { redirect } from "next/navigation";
 
-export default async function AnalyzePage() {
-  return <AnalyzeView repositories={await mockAutopilotApi.listRepositories()} />;
+export default function AnalyzePage() {
+  redirect("/connect/github");
 }

@@ -1,0 +1,55 @@
+.metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-bottom: 24px; }
+.metric { display: flex; flex-direction: column; gap: 14px; padding: 22px; }
+.metric > span { display: flex; align-items: center; gap: 8px; color: #657189; font-size: 12px; }
+.metric strong { font-size: 32px; font-weight: 650; line-height: 1.1; }
+.metric small { color: #7c879b; font-size: 11px; line-height: 1.5; }
+.feedback { display: flex; min-height: 320px; flex-direction: column; align-items: center; justify-content: center; gap: 15px; padding: 32px; color: #6c7890; text-align: center; }
+.feedback h2 { margin: 0; color: var(--color-ink); font-size: 20px; }
+.feedback p { max-width: 520px; margin: 0; line-height: 1.8; }
+.actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.spin { animation: spin 1s linear infinite; color: var(--color-blue); }
+.notice { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; margin: -8px 0 16px; color: #776638; font-size: 12px; }
+.contentGrid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(280px, 1fr); align-items: start; gap: 20px; }
+.repositorySection { padding: 24px; }
+.sectionHeader { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.eyebrow { color: #8290a8; font-size: 10px; font-weight: 700; letter-spacing: .12em; }
+.sectionHeader h2 { margin: 8px 0 0; font-size: 17px; }
+.repositoryList { margin: 20px 0 0; padding: 0; list-style: none; }
+.repositoryList li { display: flex; gap: 12px; padding: 19px 0; border-top: 1px solid var(--color-line); }
+.repositoryIcon { display: grid; width: 37px; height: 37px; flex-shrink: 0; place-items: center; border: 1px solid var(--color-line); border-radius: 10px; background: #f7f8fc; color: #6c7a97; }
+.repositoryDetails { display: grid; min-width: 0; gap: 7px; }
+.repositoryDetails a { overflow-wrap: anywhere; color: #30436c; font-size: 13px; font-weight: 650; line-height: 1.5; }
+.repositoryDetails a:hover { color: var(--color-blue); text-decoration: underline; }
+.repositoryMeta { color: #6b7891; font-size: 11px; }
+.repositoryDetails p { margin: 0; overflow-wrap: anywhere; color: #727e94; font-size: 12px; line-height: 1.7; }
+.updatedAt { color: #8993a5; font-size: 10px; line-height: 1.5; }
+.listFooter { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding-top: 18px; border-top: 1px solid var(--color-line); }
+.listFooter > span { color: #8390a5; font-size: 11px; }
+.emptyState { display: flex; min-height: 280px; flex-direction: column; align-items: center; justify-content: center; padding-top: 20px; text-align: center; }
+.emptyIcon { display: grid; width: 57px; height: 57px; place-items: center; border-radius: 16px; background: #f2f4fb; color: #7a89aa; }
+.emptyState h3 { margin: 19px 0 9px; font-size: 15px; }
+.emptyState p { margin: 0 0 21px; color: #7c879b; font-size: 12px; line-height: 1.7; }
+.workflow { display: flex; flex-direction: column; align-items: start; padding: 27px; background: linear-gradient(150deg, #fff 45%, #f3f4ff); }
+.workflowIcon { display: grid; width: 43px; height: 43px; place-items: center; margin-bottom: 22px; border-radius: 12px; background: #edf0ff; color: var(--color-blue); }
+.workflow h2 { margin: 10px 0 12px; font-size: 21px; letter-spacing: -.04em; }
+.workflow > p { margin: 0; color: #74819a; font-size: 12px; line-height: 1.9; }
+.workflow ol { display: grid; gap: 23px; width: 100%; margin: 29px 0; padding: 0; list-style: none; }
+.workflow li { display: flex; align-items: flex-start; gap: 14px; }
+.workflow li > span { padding-top: 1px; color: #9aa5bb; font-size: 11px; }
+.workflow li div { display: grid; gap: 6px; }
+.workflow li strong { font-size: 12px; font-weight: 600; }
+.workflow li small { color: #7e8aa0; font-size: 11px; line-height: 1.5; }
+.controlNote { display: flex; align-items: flex-start; gap: 6px; margin: 0 0 19px; color: #697d80; font-size: 10px; line-height: 1.6; }
+.controlNote svg { flex-shrink: 0; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (max-width: 1100px) { .contentGrid { grid-template-columns: 1fr; } .workflow { padding: 24px; } }
+@media (max-width: 600px) {
+  .metrics { grid-template-columns: 1fr; gap: 11px; }
+  .metric { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 10px; padding: 18px; }
+  .metric small { grid-column: 1 / -1; }
+  .metric strong { font-size: 27px; }
+  .repositorySection { padding: 19px 16px; }
+  .sectionHeader { align-items: flex-start; }
+  .sectionHeader h2 { font-size: 16px; }
+  .feedback { padding: 25px 18px; }
+}

@@ -2,6 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import Link from "next/link";
+import { getGithubAccountKey, GithubSessionGate, GithubSessionProvider, useGithubSession } from "@/components/auth/github-session";
 import {
   ArrowLeft,
   ExternalLink,
@@ -48,7 +49,7 @@ function getServerAnalysisSnapshot(): null {
   return null;
 }
 
-function parseStoredAnalysis(stored: string | null): {
+function parseStoredAnalysis(stored: string | null, accountKey: string | null): {
   state: ResultState;
   analysis: GithubRepositoryAnalysis | null;
 } {
@@ -67,6 +68,9 @@ function parseStoredAnalysis(stored: string | null): {
     }
 
     const record = payload as Record<string, unknown>;
+    if (!accountKey || record.accountKey !== accountKey) {
+      return { state: "invalid", analysis: null };
+    }
     return {
       state: "ready",
       analysis: parseGithubRepositoryAnalysis(record.analysis, record.repositoryId as string),
@@ -76,13 +80,14 @@ function parseStoredAnalysis(stored: string | null): {
   }
 }
 
-export default function GithubAnalysisPage() {
+function GithubAnalysisResult() {
+  const { user } = useGithubSession();
   const stored = useSyncExternalStore(
     subscribeToAnalysisStorage,
     getStoredAnalysis,
     getServerAnalysisSnapshot,
   );
-  const { state, analysis } = parseStoredAnalysis(stored);
+  const { state, analysis } = parseStoredAnalysis(stored, getGithubAccountKey(user));
 
   return (
     <main className={styles.screen}>
@@ -139,4 +144,8 @@ export default function GithubAnalysisPage() {
       </div>
     </main>
   );
+}
+
+export default function GithubAnalysisPage() {
+  return <GithubSessionProvider><GithubSessionGate><GithubAnalysisResult /></GithubSessionGate></GithubSessionProvider>;
 }

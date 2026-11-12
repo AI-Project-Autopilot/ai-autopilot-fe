@@ -1,6 +1,5 @@
-import { RepositoriesView } from "@/features/repositories/repositories-view";
-import { mockAutopilotApi } from "@/lib/mock/autopilot-api";
+import { redirect } from "next/navigation";
 
-export default async function RepositoriesPage() {
-  return <RepositoriesView repositories={await mockAutopilotApi.listRepositories()} />;
+export default function RepositoriesPage() {
+  redirect("/connect/github");
 }

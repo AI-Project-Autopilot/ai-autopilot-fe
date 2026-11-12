@@ -9,6 +9,7 @@ import {
 } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { getGithubAccountKey } from "@/components/auth/github-session";
 import {
   ArrowRight,
   CheckCircle2,
@@ -118,6 +119,11 @@ export default function GithubConnectPage() {
   const clearAnalysis = useCallback(() => {
     analysisVersion.current++;
     analysisRequest.current?.abort();
+    try {
+      window.sessionStorage.removeItem(GITHUB_ANALYSIS_STORAGE_KEY);
+    } catch {
+      // Clearing the in-memory result must also work without browser storage.
+    }
     setAnalysisError(null);
     setAnalysisState("idle");
   }, []);
@@ -234,6 +240,8 @@ export default function GithubConnectPage() {
 
   async function handleAnalysis() {
     if (!selectedRepository || loggingOut || analysisState === "loading") return;
+    const accountKey = getGithubAccountKey(user);
+    if (!accountKey) return;
     analysisRequest.current?.abort();
     const controller = new AbortController();
     analysisRequest.current = controller;
@@ -245,6 +253,7 @@ export default function GithubConnectPage() {
       const result = await analyzeGithubRepository(selectedRepository.id, goal, controller.signal);
       if (controller.signal.aborted || version !== analysisVersion.current || account !== accountVersion.current) return;
       window.sessionStorage.setItem(GITHUB_ANALYSIS_STORAGE_KEY, JSON.stringify({
+        accountKey,
         repositoryId: selectedRepository.id,
         analysis: result,
       }));
@@ -282,12 +291,16 @@ export default function GithubConnectPage() {
     try {
       await logoutGithub(controller.signal);
       if (controller.signal.aborted || version !== accountVersion.current) return;
-      window.sessionStorage.removeItem(GITHUB_ANALYSIS_STORAGE_KEY);
       setUser(null);
       clearRepositories();
       setSession("guest");
     } catch (error) {
       if (controller.signal.aborted || version !== accountVersion.current) return;
+      if (error instanceof ApiError && error.status === 401) {
+        setUser(null);
+        clearRepositories();
+        setSession("guest");
+      }
       setNotice(apiErrorMessage(error, "로그아웃"));
     } finally {
       if (!controller.signal.aborted && version === accountVersion.current) setLoggingOut(false);
