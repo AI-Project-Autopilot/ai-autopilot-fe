@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import { RepositoriesView } from "@/features/repositories/repositories-view";
 
 export default function RepositoriesPage() {
-  redirect("/dashboard#repositories");
+  return <RepositoriesView />;
 }

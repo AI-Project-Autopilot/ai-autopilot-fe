@@ -1,6 +1,7 @@
 .screen { min-height:100vh; display:flex; justify-content:center; padding:36px 20px; background:radial-gradient(circle at 10% 0%, #ecf0ff 0, transparent 40%),var(--color-canvas); }
 .container { width:min(100%, 760px); }
-.header { display:flex; justify-content:space-between; align-items:center; margin:0 0 72px; }
+.header { display:flex; justify-content:space-between; align-items:center; gap:16px; margin:0 0 72px; }
+.headerControls { display:flex; align-items:center; justify-content:flex-end; flex-wrap:wrap; gap:10px; }
 .brand { font-size:25px; font-weight:800; letter-spacing:-1.4px; color:var(--color-navy); }
 .brand span { color:var(--color-blue); }
 .topLabel { border:1px solid var(--color-line-strong); border-radius:99px; background:white; padding:8px 14px; color:var(--color-muted); font-weight:600; font-size:12px; }
@@ -34,7 +35,7 @@
 .actions { display:grid; gap:10px; }
 .logoutButton { justify-self:start; border:0; padding:8px 0; background:none; color:var(--color-muted); display:flex; gap:7px; align-items:center; cursor:pointer; }
 .logoutButton:hover { color:var(--color-ink); }
-.footer { display:flex; gap:9px; align-items:center; justify-content:center; margin:24px 0; color:var(--color-muted); font-size:12px; }
+.footer { display:flex; flex-wrap:wrap; gap:9px; align-items:center; justify-content:center; margin:24px 0; color:var(--color-muted); font-size:12px; line-height:1.8; }
 .footer a { font-weight:700; color:var(--color-blue-dark); }
 @media(max-width:600px) { .header { margin-bottom:42px; } .card { padding:28px 22px; } .card h1 { font-size:26px; } .connected { font-size:0; gap:0; } .connected svg { width:20px; height:20px; } }
 

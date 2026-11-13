@@ -11,6 +11,7 @@ import {
   type ReactNode,
 } from "react";
 import { ArrowRight, GitBranch, LoaderCircle, RefreshCw, ShieldCheck } from "lucide-react";
+import { useLanguage } from "@/components/i18n/language-provider";
 import {
   ApiError,
   fetchCurrentUser,
@@ -49,10 +50,12 @@ function clearStoredAnalysis() {
 }
 
 export function GithubSessionProvider({ children }: { children: ReactNode }) {
+  const { t } = useLanguage();
   const [status, setStatus] = useState<SessionStatus>("loading");
   const [user, setUser] = useState<GithubUser | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
-  const [logoutError, setLogoutError] = useState<string | null>(null);
+  const [logoutFailed, setLogoutFailed] = useState(false);
+  const logoutError = logoutFailed ? t("로그아웃하지 못했습니다. 다시 시도해 주세요.", "Could not sign out. Please try again.") : null;
   const sessionRequest = useRef<AbortController | null>(null);
   const logoutRequest = useRef<AbortController | null>(null);
 
@@ -63,10 +66,11 @@ export function GithubSessionProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setStatus("unauthenticated");
     setLoggingOut(false);
-    setLogoutError(null);
+    setLogoutFailed(false);
   }, []);
 
   const loadSession = useCallback(() => {
+    if (logoutRequest.current && !logoutRequest.current.signal.aborted) return Promise.resolve();
     sessionRequest.current?.abort();
     const controller = new AbortController();
     sessionRequest.current = controller;
@@ -93,9 +97,9 @@ export function GithubSessionProvider({ children }: { children: ReactNode }) {
   }, [loadSession]);
 
   useEffect(() => {
-    const handleFocus = () => { void checkSession(); };
+    const handleFocus = () => { void loadSession(); };
     const handlePageShow = (event: PageTransitionEvent) => {
-      if (event.persisted) void checkSession();
+      if (event.persisted) void loadSession();
     };
     window.addEventListener("focus", handleFocus);
     window.addEventListener("pageshow", handlePageShow);
@@ -103,7 +107,7 @@ export function GithubSessionProvider({ children }: { children: ReactNode }) {
       window.removeEventListener("focus", handleFocus);
       window.removeEventListener("pageshow", handlePageShow);
     };
-  }, [checkSession]);
+  }, [loadSession]);
 
   useEffect(() => {
     void loadSession();
@@ -119,7 +123,7 @@ export function GithubSessionProvider({ children }: { children: ReactNode }) {
     const controller = new AbortController();
     logoutRequest.current = controller;
     setLoggingOut(true);
-    setLogoutError(null);
+    setLogoutFailed(false);
     try {
       await logoutGithub(controller.signal);
       if (!controller.signal.aborted) markUnauthenticated();
@@ -128,7 +132,7 @@ export function GithubSessionProvider({ children }: { children: ReactNode }) {
       if (error instanceof ApiError && error.status === 401) {
         markUnauthenticated();
       } else {
-        setLogoutError("로그아웃하지 못했습니다. 다시 시도해 주세요.");
+        setLogoutFailed(true);
       }
     } finally {
       if (logoutRequest.current === controller) {
@@ -151,29 +155,30 @@ export function useGithubSession(): GithubSession {
 
 export function GithubSessionGate({ children }: { children: ReactNode }) {
   const { status, checkSession, loggingOut } = useGithubSession();
+  const { t } = useLanguage();
 
   if (status === "authenticated" && !loggingOut) return children;
 
   if (status === "loading" || loggingOut) {
     return <section className={styles.loading} role="status" aria-live="polite">
       <LoaderCircle className={styles.spin} size={24} aria-hidden="true" />
-      <p>{loggingOut ? "로그아웃하고 있어요…" : "GitHub 로그인 상태를 확인하고 있어요…"}</p>
+      <p>{loggingOut ? t("로그아웃하고 있어요…", "Signing out…") : t("GitHub 로그인 상태를 확인하고 있어요…", "Checking your GitHub session…")}</p>
     </section>;
   }
 
   const failed = status === "error";
   return <section className={styles.gate} aria-labelledby="session-heading">
-    <span className={styles.eyebrow}>YOUR WORKSPACE</span>
+    <span className={styles.eyebrow}>{t("내 워크스페이스", "YOUR WORKSPACE")}</span>
     <div className={styles.icon}><GitBranch size={32} aria-hidden="true" /></div>
-    <h1 id="session-heading">{failed ? "로그인 상태를 확인할 수 없어요" : "프로젝트의 다음 단계를, 함께."}</h1>
+    <h1 id="session-heading">{failed ? t("로그인 상태를 확인할 수 없어요", "We could not check your session") : t("프로젝트의 다음 단계를, 함께.", "Find your project's next step.")}</h1>
     <p>{failed
-      ? "서버에 연결하지 못했습니다. 연결 상태를 확인하고 다시 시도해 주세요."
-      : "GitHub에 로그인하면 내 저장소를 불러오고, 코드에 근거한 개선 방향을 확인할 수 있어요."}</p>
+      ? t("서버에 연결하지 못했습니다. 연결 상태를 확인하고 다시 시도해 주세요.", "Could not connect to the server. Check your connection and try again.")
+      : t("GitHub에 로그인하면 내 저장소를 불러오고, 코드에 근거한 개선 방향을 확인할 수 있어요.", "Sign in with GitHub to see your repositories and explore improvements grounded in your code.")}</p>
     <div className={styles.actions}>
-      {failed && <button className={styles.primaryButton} type="button" onClick={() => void checkSession()}><RefreshCw size={16} aria-hidden="true" /> 다시 확인하기</button>}
-      <Link className={failed ? styles.secondaryButton : styles.primaryButton} href="/connect/github"><GitBranch size={17} aria-hidden="true" /> GitHub로 시작하기 <ArrowRight size={16} aria-hidden="true" /></Link>
+      {failed && <button className={styles.primaryButton} type="button" onClick={() => void checkSession()}><RefreshCw size={16} aria-hidden="true" /> {t("다시 확인하기", "Try again")}</button>}
+      <Link className={failed ? styles.secondaryButton : styles.primaryButton} href="/connect/github"><GitBranch size={17} aria-hidden="true" /> {t("GitHub로 시작하기", "Get started with GitHub")} <ArrowRight size={16} aria-hidden="true" /></Link>
     </div>
-    <span className={styles.note}><ShieldCheck size={15} aria-hidden="true" /> 로그인 전에는 저장소나 분석 결과가 표시되지 않습니다.</span>
-    <Link className={styles.aboutLink} href="/">서비스 알아보기 <ArrowRight size={14} aria-hidden="true" /></Link>
+    <span className={styles.note}><ShieldCheck size={15} aria-hidden="true" /> {t("로그인 전에는 저장소나 분석 결과가 표시되지 않습니다.", "Your repositories and analysis appear only after you sign in.")}</span>
+    <Link className={styles.aboutLink} href="/">{t("서비스 알아보기", "Explore Autopilot")} <ArrowRight size={14} aria-hidden="true" /></Link>
   </section>;
 }

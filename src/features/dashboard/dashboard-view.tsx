@@ -1,18 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowRight, CheckCircle2, GitBranch, GitPullRequest, LoaderCircle, LockKeyhole, RefreshCw } from "lucide-react";
+import { ArrowRight, CheckCircle2, GitBranch, GitPullRequest, LoaderCircle, LockKeyhole, RefreshCw, Sparkles } from "lucide-react";
 import { useGithubSession } from "@/components/auth/github-session";
+import { useLanguage } from "@/components/i18n/language-provider";
 import { Button, Card, PageHeading } from "@/components/ui/primitives";
+import { useRepositoryWorkspaceContext } from "@/features/workspace/repository-workspace-context";
 import { getGithubLoginUrl } from "@/lib/api/github-connect-api";
-import { RepositoryAnalysisPanel } from "./repository-analysis-panel";
-import { useRepositoryWorkspace } from "./use-repository-workspace";
 import styles from "./dashboard-view.module.css";
 
-function DashboardContent() {
+export function DashboardView() {
   const { user } = useGithubSession();
-  const workspace = useRepositoryWorkspace();
-  const { repositories, repositoryState, repositoryError, hasNextPage, privateRepositoriesIncluded, loadingMore, selectedId, selectedRepository, selectRepository, refreshRepositories, loadMoreRepositories } = workspace;
+  const { t, locale } = useLanguage();
+  const { repositories, repositoryState, repositoryError, hasNextPage, privateRepositoriesIncluded, refreshRepositories } = useRepositoryWorkspaceContext();
   const [today, setToday] = useState(() => new Date());
 
   useEffect(() => {
@@ -20,76 +20,29 @@ function DashboardContent() {
     return () => window.clearInterval(interval);
   }, []);
 
-  const name = user?.name || user?.login || "GitHub 사용자";
   const loaded = repositoryState === "ready" || repositories.length > 0;
+  const name = user?.name || user?.login || t("GitHub 사용자", "GitHub user");
 
   return <>
-    <PageHeading
-      eyebrow={new Intl.DateTimeFormat("ko-KR", { dateStyle: "full" }).format(today)}
-      title={`${name}님, 안녕하세요.`}
-      description="분석할 GitHub 저장소를 선택하고, 다음 개발 방향을 찾아보세요."
-      actions={<Button href={selectedRepository ? "#analysis" : "#repositories"}><GitBranch size={15} /> {selectedRepository ? "선택한 저장소 분석하기" : "저장소 선택하기"}</Button>}
-    />
-
-    {repositoryState === "loading" && <Card className={styles.feedback}>
-      <LoaderCircle size={22} className={styles.spin} aria-hidden="true" />
-      <p role="status">GitHub 저장소를 불러오고 있어요…</p>
-    </Card>}
-
-    {repositoryState === "error" && repositories.length === 0 && <Card className={styles.feedback}>
-      <GitBranch size={26} aria-hidden="true" />
-      <h2>저장소를 확인할 수 없어요</h2>
-      <p role="alert">{repositoryError}</p>
-      <div className={styles.actions}><Button onClick={() => void refreshRepositories()} variant="secondary"><RefreshCw size={15} /> 다시 불러오기</Button><a href={getGithubLoginUrl()} className={styles.inlineLink}>GitHub 권한 다시 승인 <ArrowRight size={14} /></a></div>
-    </Card>}
-
+    <PageHeading eyebrow={new Intl.DateTimeFormat(locale, { dateStyle: "full" }).format(today)} title={t(`${name}님, 안녕하세요.`, `Hello, ${name}.`)} description={t("GitHub 연결 상태와 프로젝트 현황을 확인하세요.", "Check your GitHub connection and project overview.")} actions={<Button href="/repositories"><GitBranch size={15} /> {t("저장소 둘러보기", "Browse repositories")}</Button>} />
+    <Card className={styles.connection}>
+      <span className={styles.connectionIcon}><CheckCircle2 size={22} aria-hidden="true" /></span>
+      <div><strong>{t("GitHub 계정이 연결되어 있어요", "Your GitHub account is connected")}</strong><span>{user?.login ? `@${user.login}` : name}</span></div>
+      <span className={styles.connected}>{t("연결됨", "Connected")}</span>
+    </Card>
+    {repositoryState === "loading" && <Card className={styles.feedback}><LoaderCircle size={21} className={styles.spin} aria-hidden="true" /><p role="status">{t("저장소 현황을 확인하고 있어요…", "Checking your repositories…")}</p></Card>}
+    {repositoryState === "error" && !loaded && <Card className={styles.feedback}><h2>{t("저장소 현황을 확인할 수 없어요", "Could not check your repositories")}</h2><p role="alert">{repositoryError}</p><Button variant="secondary" onClick={() => void refreshRepositories()}><RefreshCw size={14} /> {t("다시 불러오기", "Try again")}</Button></Card>}
     {loaded && <>
-      <section className={styles.metrics} aria-label="불러온 저장소 요약">
-        <Card className={styles.metric}><span><GitBranch size={16} /> 불러온 저장소</span><strong>{repositories.length.toLocaleString("ko-KR")}</strong><small>{hasNextPage ? "목록 아래에서 더 불러올 수 있어요" : "현재 계정으로 조회한 저장소"}</small></Card>
-        <Card className={styles.metric}><span><GitPullRequest size={16} /> 열린 이슈</span><strong>{repositories.reduce((total, repository) => total + repository.openIssueCount, 0).toLocaleString("ko-KR")}</strong><small>불러온 저장소의 열린 이슈 합계</small></Card>
-        <Card className={styles.metric}><span><LockKeyhole size={16} /> 비공개 저장소</span><strong>{repositories.filter((repository) => repository.isPrivate).length.toLocaleString("ko-KR")}</strong><small>불러온 목록에서 접근 가능한 저장소</small></Card>
+      <section className={styles.metrics} aria-label={t("불러온 저장소 요약", "Loaded repository summary")}>
+        <Card className={styles.metric}><span><GitBranch size={16} /> {t("불러온 저장소", "Loaded repositories")}</span><strong>{repositories.length.toLocaleString(locale)}</strong><small>{hasNextPage ? t("추가 저장소는 저장소 화면에서 불러오세요", "Load more on the Repositories screen") : t("현재 계정으로 조회한 저장소", "Repositories accessible to this account")}</small></Card>
+        <Card className={styles.metric}><span><GitPullRequest size={16} /> {t("열린 이슈", "Open issues")}</span><strong>{repositories.reduce((total, repository) => total + repository.openIssueCount, 0).toLocaleString(locale)}</strong><small>{t("불러온 저장소의 열린 이슈 합계", "Total open issues in loaded repositories")}</small></Card>
+        <Card className={styles.metric}><span><LockKeyhole size={16} /> {t("비공개 저장소", "Private repositories")}</span><strong>{repositories.filter((repository) => repository.isPrivate).length.toLocaleString(locale)}</strong><small>{t("불러온 목록에서 접근 가능한 저장소", "Accessible private repositories in this list")}</small></Card>
       </section>
-
-      {privateRepositoriesIncluded === false && <p className={styles.notice}>현재 연결은 비공개 저장소를 포함하지 않습니다. <a href={getGithubLoginUrl()} className={styles.inlineLink}>GitHub 권한 다시 승인 <ArrowRight size={13} /></a></p>}
-
-      <div className={styles.contentGrid}>
-        <Card className={styles.repositorySection}>
-          <div id="repositories" className={styles.sectionHeader}><div><span className={styles.eyebrow}>YOUR REPOSITORIES</span><h2>내 GitHub 저장소</h2></div><Button variant="quiet" onClick={() => void refreshRepositories()}><RefreshCw size={14} /> 새로고침</Button></div>
-          <p className={styles.selectionHint}>분석할 저장소를 선택해 주세요.</p>
-          {repositories.length > 0 ? <>
-            <fieldset className={styles.repositoryFieldset}>
-              <legend className={styles.srOnly}>분석할 GitHub 저장소 선택</legend>
-              <ul className={styles.repositoryList}>{repositories.map((repository) => <li key={repository.id}>
-                <label className={`${styles.repositoryOption}${selectedId === repository.id ? ` ${styles.repositorySelected}` : ""}`}>
-                  <input type="radio" name="dashboard-repository" value={repository.id} checked={selectedId === repository.id} onChange={() => selectRepository(repository.id)} />
-                  <span className={styles.repositoryDetails}>
-                    <strong>{repository.fullName}</strong>
-                    <span className={styles.repositoryMeta}>{repository.isPrivate ? "비공개" : "공개"}{repository.archived ? " · 보관됨" : ""}{repository.language ? ` · ${repository.language}` : ""} · 기본 브랜치 {repository.defaultBranch || "없음"}</span>
-                    {repository.description && <span className={styles.repositoryDescription}>{repository.description}</span>}
-                    <span className={styles.updatedAt}>업데이트 <time dateTime={repository.updatedAt}>{new Intl.DateTimeFormat("ko-KR", { year: "numeric", month: "long", day: "numeric" }).format(new Date(repository.updatedAt))}</time></span>
-                  </span>
-                  {selectedId === repository.id && <CheckCircle2 className={styles.selectedIcon} size={18} aria-hidden="true" />}
-                </label>
-              </li>)}</ul>
-            </fieldset>
-            {repositoryError && <p className={styles.repositoryError} role="alert">{repositoryError}</p>}
-            <div className={styles.listFooter}><span>{repositories.length}개 저장소 불러옴{hasNextPage ? " · 더 불러올 수 있어요" : ""}</span>{hasNextPage && <Button onClick={() => void loadMoreRepositories()} variant="secondary" disabled={loadingMore}>{loadingMore ? <LoaderCircle className={styles.spin} size={14} /> : <ArrowRight size={14} />} {loadingMore ? "불러오는 중…" : repositoryError ? "추가 저장소 다시 불러오기" : "저장소 더 불러오기"}</Button>}</div>
-          </> : <div className={styles.emptyState}>
-            <span className={styles.emptyIcon}><GitBranch size={25} aria-hidden="true" /></span>
-            <h3>조회 가능한 저장소가 없어요</h3>
-            <p>GitHub 계정과 저장소 접근 권한을 확인해 주세요.</p>
-            <a className={styles.inlineLink} href={getGithubLoginUrl()}>GitHub 권한 다시 승인 <ArrowRight size={14} /></a>
-          </div>}
-        </Card>
-
-        <RepositoryAnalysisPanel workspace={workspace} />
-      </div>
+      {privateRepositoriesIncluded === false && <p className={styles.notice}>{t("현재 연결에는 비공개 저장소가 포함되지 않습니다.", "This connection does not include private repositories.")} <a href={getGithubLoginUrl()}>{t("GitHub 권한 다시 승인", "Reauthorize GitHub access")} <ArrowRight size={13} /></a></p>}
     </>}
+    <div className={styles.nextSteps}>
+      <Card className={styles.nextStep}><span className={styles.stepIcon}><GitBranch size={21} aria-hidden="true" /></span><h2>{t("분석할 저장소 찾기", "Find a repository to analyze")}</h2><p>{t("접근 가능한 저장소를 살펴보고 분석할 프로젝트를 선택하세요.", "Browse accessible repositories and choose a project to analyze.")}</p><Button href="/repositories" variant="secondary">{t("저장소로 이동", "Go to repositories")} <ArrowRight size={14} /></Button></Card>
+      <Card className={styles.nextStep}><span className={`${styles.stepIcon} ${styles.analysisIcon}`}><Sparkles size={21} aria-hidden="true" /></span><h2>{t("새 분석 시작하기", "Start a new analysis")}</h2><p>{t("저장소와 개발 목표를 정하고 코드에 근거한 개선 방향을 확인하세요.", "Choose a repository and development goal to explore improvements grounded in code.")}</p><Button href="/analyze" variant="secondary">{t("새 분석으로 이동", "Go to new analysis")} <ArrowRight size={14} /></Button></Card>
+    </div>
   </>;
-}
-
-export function DashboardView() {
-  const { status, user } = useGithubSession();
-  if (status !== "authenticated" || !user) return null;
-  return <DashboardContent key={`${user.id ?? ""}:${user.login ?? ""}`} />;
 }

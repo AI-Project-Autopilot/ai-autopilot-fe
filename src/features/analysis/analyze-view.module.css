@@ -1,0 +1,28 @@
+.analysisGrid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(280px, 1fr); align-items: start; gap: 22px; }
+.formColumn { display: grid; min-width: 0; gap: 18px; }
+.selector { padding: 26px; }
+.stepLabel { color: #7f8baa; font-size: 10px; font-weight: 700; letter-spacing: .07em; }
+.selector h2 { margin: 11px 0 24px; font-size: 18px; letter-spacing: -.03em; }
+.selector > label { display: block; margin-bottom: 9px; color: #55627d; font-size: 12px; font-weight: 600; }
+.selector select { width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid var(--color-line-strong); border-radius: 8px; background: #fff; color: var(--color-ink); font-size: 13px; text-overflow: ellipsis; }
+.selector select:disabled { background: #f6f7fb; color: #8290aa; }
+.help { margin: 10px 0 0; color: #8a95a9; font-size: 11px; line-height: 1.8; }
+.selectorActions { display: flex; align-items: center; flex-wrap: wrap; justify-content: space-between; gap: 8px; margin-top: 18px; }
+.selectorActions > a { padding-left: 0; }
+.status { display: flex; align-items: center; gap: 8px; margin: 16px 0 0; color: #7787a7; font-size: 12px; line-height: 1.8; }
+.error { display: grid; justify-items: start; gap: 6px; margin: 15px 0 0; padding: 13px; border: 1px solid #efd8bc; border-radius: 8px; background: #fff7ec; color: #94601d; font-size: 12px; line-height: 1.8; }
+.context { padding: 27px; background: linear-gradient(150deg, #fff 50%, #f5f6ff); }
+.context h2 { margin: 12px 0; font-size: 21px; letter-spacing: -.04em; }
+.context > p { margin: 0; color: #7b87a0; font-size: 12px; line-height: 1.9; word-break: keep-all; }
+.context ul { display: grid; gap: 26px; margin: 30px 0; padding: 0; list-style: none; }
+.context li { display: flex; align-items: flex-start; gap: 12px; }
+.context li > svg { flex-shrink: 0; margin-top: 1px; color: #8291c4; }
+.context li div { display: grid; gap: 7px; }
+.context li strong { color: #53627f; font-size: 12px; }
+.context li span { color: #8c98ad; font-size: 11px; line-height: 1.8; }
+.context .control { display: flex; align-items: flex-start; gap: 7px; padding-top: 19px; border-top: 1px solid var(--color-line); color: #8499a0; font-size: 10px; }
+.control svg { flex-shrink: 0; margin-top: 2px; }
+.spin { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (max-width: 1050px) { .analysisGrid { grid-template-columns: 1fr; } }
+@media (max-width: 600px) { .selector, .context { padding: 22px 18px; } .selector h2 { font-size: 17px; } }

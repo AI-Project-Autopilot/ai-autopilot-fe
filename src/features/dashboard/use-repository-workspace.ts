@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useLanguage } from "@/components/i18n/language-provider";
+import { workspaceErrorMessage, type WorkspaceLanguage } from "./workspace-messages";
 import { getGithubAccountKey, useGithubSession } from "@/components/auth/github-session";
 import {
   ApiError,
@@ -13,6 +15,7 @@ import {
 
 type RepositoryState = "loading" | "ready" | "error";
 type AnalysisState = "idle" | "loading" | "done" | "error";
+type SelectionState = "idle" | "loading" | "ready" | "error";
 
 type RepositoryListing = {
   repositories: GithubRepository[];
@@ -30,10 +33,15 @@ export type RepositoryWorkspace = RepositoryListing & {
   selectedId: string | null;
   selectedRepository: GithubRepository | null;
   selectRepository: (id: string) => void;
+  ensureRepositorySelected: (id: string) => Promise<void>;
+  selectionState: SelectionState;
+  selectionError: string | null;
   goal: string;
   setGoal: (value: string) => void;
   analysisState: AnalysisState;
   analysisError: string | null;
+  requestedAnalysisLanguage: WorkspaceLanguage | null;
+  repositoryPermissionError: boolean;
   analyzeRepository: () => Promise<void>;
   cancelAnalysis: () => void;
 };
@@ -58,48 +66,67 @@ function clearStoredAnalysis() {
   }
 }
 
-function repositoryErrorMessage(error: unknown): string {
+function repositoryErrorKey(error: unknown): string {
   if (error instanceof ApiError) {
-    if (error.status === 403) return "저장소 접근 권한이 없습니다. GitHub 연결 화면에서 권한을 확인해 주세요.";
-    if (error.status === 429) return "GitHub 요청 한도에 도달했습니다. 잠시 후 다시 시도해 주세요.";
+    if (error.status === 403) return "repository.forbidden";
+    if (error.status === 429) return "repository.rateLimit";
   }
-  return "저장소를 불러오지 못했습니다. 연결 상태를 확인하고 다시 시도해 주세요.";
+  return "repository.failed";
 }
 
-function analysisErrorMessage(error: unknown): string {
+function analysisErrorKey(error: unknown): string {
   if (error instanceof ApiError) {
     const messages: Record<number, string> = {
-      400: "분석 요청이 올바르지 않습니다. 개발 목표를 2,000자 이내로 입력해 주세요.",
-      403: "선택한 저장소를 읽을 권한이 없습니다. GitHub 권한을 확인해 주세요.",
-      404: "저장소를 찾을 수 없습니다. 목록을 새로고침해 주세요.",
-      409: "이미 분석이 진행 중입니다. 잠시 후 다시 시도해 주세요.",
-      422: "분석할 수 있는 문서나 코드가 없습니다. 다른 저장소를 선택해 주세요.",
-      429: "요청이 많습니다. 잠시 후 다시 분석해 주세요.",
-      502: "분석 결과를 받지 못했습니다. 잠시 후 다시 시도해 주세요.",
-      503: "현재 분석 서비스를 사용할 수 없습니다. 잠시 후 다시 시도해 주세요.",
-      504: "분석 시간이 초과되었습니다. 목표를 좁혀 다시 시도해 주세요.",
+      400: "analysis.invalid", 403: "analysis.forbidden", 404: "analysis.notFound",
+      409: "analysis.conflict", 422: "analysis.empty", 429: "analysis.rateLimit",
+      502: "analysis.resultFailed", 503: "analysis.unavailable", 504: "analysis.timeout",
     };
-    return messages[error.status] ?? "저장소 분석에 실패했습니다. 잠시 후 다시 시도해 주세요.";
+    return messages[error.status] ?? "analysis.apiFailed";
   }
-  if (error instanceof Error && error.name === "TimeoutError") {
-    return "분석 시간이 초과되었습니다. 잠시 후 다시 시도해 주세요.";
-  }
-  return "분석을 완료하지 못했습니다. 연결 상태를 확인하고 다시 시도해 주세요.";
+  return error instanceof Error && error.name === "TimeoutError" ? "analysis.timeout" : "analysis.connectionFailed";
 }
 
 export function useRepositoryWorkspace(): RepositoryWorkspace {
   const router = useRouter();
+  const { language } = useLanguage();
+  const pathname = usePathname();
   const { status, user, loggingOut, markUnauthenticated } = useGithubSession();
   const accountKey = getGithubAccountKey(user);
   const available = status === "authenticated" && !!accountKey && !loggingOut;
   const [listing, setListing] = useState<RepositoryListing>(emptyListing);
+  const listingSnapshot = useRef<RepositoryListing>(emptyListing());
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const selectedIdSnapshot = useRef<string | null>(null);
   const [goal, updateGoal] = useState("");
+  const [selectionState, setSelectionState] = useState<SelectionState>("idle");
+  const [selectionError, setSelectionError] = useState<string | null>(null);
+  const [requestedAnalysisLanguage, setRequestedAnalysisLanguage] = useState<WorkspaceLanguage | null>(null);
   const [analysisState, setAnalysisState] = useState<AnalysisState>("idle");
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const repositoryRequest = useRef<AbortController | null>(null);
+  const repositoryTask = useRef<Promise<RepositoryListing | null> | null>(null);
+  const selectionRequest = useRef<AbortController | null>(null);
+  const selectionTask = useRef<{ id: string; task: Promise<void> } | null>(null);
   const analysisRequest = useRef<AbortController | null>(null);
   const selectedRepository = listing.repositories.find((repository) => repository.id === selectedId) ?? null;
+
+  const commitListing = useCallback((next: RepositoryListing) => {
+    listingSnapshot.current = next;
+    setListing(next);
+  }, []);
+
+  const commitSelectedId = useCallback((id: string | null) => {
+    selectedIdSnapshot.current = id;
+    setSelectedId(id);
+  }, []);
+
+  const cancelSelectionResolution = useCallback(() => {
+    selectionRequest.current?.abort();
+    selectionRequest.current = null;
+    selectionTask.current = null;
+    setSelectionState("idle");
+    setSelectionError(null);
+  }, []);
 
   const cancelAnalysis = useCallback(() => {
     analysisRequest.current?.abort();
@@ -107,82 +134,192 @@ export function useRepositoryWorkspace(): RepositoryWorkspace {
     clearStoredAnalysis();
     setAnalysisState("idle");
     setAnalysisError(null);
+    setRequestedAnalysisLanguage(null);
   }, []);
 
-  const loadRepositories = useCallback(async (nextPage: number) => {
-    if (!available) return;
+  const loadRepositories = useCallback((nextPage: number, selectionSignal?: AbortSignal): Promise<RepositoryListing | null> => {
+    if (!available) return Promise.resolve(null);
     repositoryRequest.current?.abort();
     const controller = new AbortController();
     repositoryRequest.current = controller;
-    try {
-      const data = await fetchGithubRepositories(nextPage, controller.signal);
-      if (controller.signal.aborted || repositoryRequest.current !== controller) return;
-      setListing((previous) => ({
-        repositories: [...new Map(
-          (nextPage === 1 ? data.items : [...previous.repositories, ...data.items])
-            .map((repository) => [repository.id, repository]),
-        ).values()],
-        repositoryState: "ready",
-        repositoryError: null,
-        page: data.page,
-        hasNextPage: data.hasNextPage,
-        privateRepositoriesIncluded: data.privateRepositoriesIncluded,
-        loadingMore: false,
-      }));
-    } catch (error) {
-      if (controller.signal.aborted || repositoryRequest.current !== controller) return;
-      if (error instanceof ApiError && error.status === 401) {
-        analysisRequest.current?.abort();
-        clearStoredAnalysis();
-        setListing(emptyListing());
-        setSelectedId(null);
-        updateGoal("");
-        markUnauthenticated();
-        return;
+    const signal = selectionSignal ? AbortSignal.any([controller.signal, selectionSignal]) : controller.signal;
+    const task = (async () => {
+      try {
+        const data = await fetchGithubRepositories(nextPage, signal);
+        if (signal.aborted || repositoryRequest.current !== controller) return null;
+        const next: RepositoryListing = {
+          repositories: [...new Map(
+            (nextPage === 1 ? data.items : [...listingSnapshot.current.repositories, ...data.items])
+              .map((repository) => [repository.id, repository]),
+          ).values()],
+          repositoryState: "ready",
+          repositoryError: null,
+          page: data.page,
+          hasNextPage: data.hasNextPage,
+          privateRepositoriesIncluded: data.privateRepositoriesIncluded,
+          loadingMore: false,
+        };
+        commitListing(next);
+        return next;
+      } catch (error) {
+        if (signal.aborted || repositoryRequest.current !== controller) return null;
+        if (error instanceof ApiError && error.status === 401) {
+          analysisRequest.current?.abort();
+          selectionRequest.current?.abort();
+          clearStoredAnalysis();
+          commitListing(emptyListing());
+          commitSelectedId(null);
+          updateGoal("");
+          markUnauthenticated();
+          return null;
+        }
+        commitListing({
+          ...listingSnapshot.current,
+          repositoryState: nextPage === 1 ? "error" : "ready",
+          repositoryError: repositoryErrorKey(error),
+          loadingMore: false,
+        });
+        return null;
+      } finally {
+        if (repositoryRequest.current === controller) {
+          repositoryRequest.current = null;
+          repositoryTask.current = null;
+          if (signal.aborted && listingSnapshot.current.loadingMore) {
+            commitListing({ ...listingSnapshot.current, loadingMore: false });
+          }
+        }
       }
-      setListing((previous) => ({
-        ...previous,
-        repositoryState: nextPage === 1 ? "error" : "ready",
-        repositoryError: repositoryErrorMessage(error),
-        loadingMore: false,
-      }));
-    } finally {
-      if (repositoryRequest.current === controller) repositoryRequest.current = null;
-    }
-  }, [available, markUnauthenticated]);
+    })();
+    repositoryTask.current = task;
+    return task;
+  }, [available, commitListing, commitSelectedId, markUnauthenticated]);
 
   useEffect(() => {
     if (!available) return;
-    clearStoredAnalysis();
     void loadRepositories(1);
     return () => {
       repositoryRequest.current?.abort();
+      selectionRequest.current?.abort();
       analysisRequest.current?.abort();
     };
   }, [accountKey, available, loadRepositories]);
 
+  useEffect(() => {
+    return () => {
+      // Changing screens cancels pending work while keeping the selected repo,
+      // goal, loaded pages, and an already completed result available.
+      if (analysisRequest.current) {
+        analysisRequest.current.abort();
+        analysisRequest.current = null;
+        setAnalysisError(null);
+      }
+      setAnalysisState((current) => current === "loading" ? "idle" : current);
+      if (selectionRequest.current) {
+        selectionRequest.current.abort();
+        selectionRequest.current = null;
+        selectionTask.current = null;
+        setSelectionError(null);
+      }
+      setSelectionState((current) => current === "loading" ? "idle" : current);
+    };
+  }, [pathname]);
+
   const refreshRepositories = useCallback(async () => {
     if (!available) return;
+    cancelSelectionResolution();
     repositoryRequest.current?.abort();
     cancelAnalysis();
-    setSelectedId(null);
+    commitSelectedId(null);
     updateGoal("");
-    setListing(emptyListing());
+    commitListing(emptyListing());
     await loadRepositories(1);
-  }, [available, cancelAnalysis, loadRepositories]);
+  }, [available, cancelAnalysis, cancelSelectionResolution, commitListing, commitSelectedId, loadRepositories]);
 
   const loadMoreRepositories = useCallback(async () => {
-    if (!available || repositoryRequest.current || !listing.hasNextPage || listing.page < 1) return;
-    setListing((previous) => ({ ...previous, repositoryError: null, loadingMore: true }));
-    await loadRepositories(listing.page + 1);
-  }, [available, listing.hasNextPage, listing.page, loadRepositories]);
+    const current = listingSnapshot.current;
+    if (!available || repositoryRequest.current || !current.hasNextPage || current.page < 1) return;
+    commitListing({ ...current, repositoryError: null, loadingMore: true });
+    await loadRepositories(current.page + 1);
+  }, [available, commitListing, loadRepositories]);
 
   const selectRepository = useCallback((id: string) => {
-    if (!available || id === selectedId || !listing.repositories.some((repository) => repository.id === id)) return;
+    if (!available || !listingSnapshot.current.repositories.some((repository) => repository.id === id)) return;
+    cancelSelectionResolution();
+    if (id !== selectedIdSnapshot.current) {
+      cancelAnalysis();
+      updateGoal("");
+      commitSelectedId(id);
+    }
+    setSelectionState("ready");
+  }, [available, cancelAnalysis, cancelSelectionResolution, commitSelectedId]);
+
+  const ensureRepositorySelected = useCallback((id: string): Promise<void> => {
+    if (!available || pathname !== "/analyze" || window.location.pathname !== "/analyze") return Promise.resolve();
+    if (selectionTask.current?.id === id) return selectionTask.current.task;
+    cancelSelectionResolution();
+    if (!/^[1-9][0-9]{0,19}$/.test(id)) {
+      cancelAnalysis();
+      commitSelectedId(null);
+      updateGoal("");
+      setSelectionState("error");
+      setSelectionError("selection.invalid");
+      return Promise.resolve();
+    }
+    if (selectedIdSnapshot.current === id && listingSnapshot.current.repositories.some((repository) => repository.id === id)) {
+      setSelectionState("ready");
+      return Promise.resolve();
+    }
     cancelAnalysis();
+    commitSelectedId(null);
     updateGoal("");
-    setSelectedId(id);
-  }, [available, cancelAnalysis, listing.repositories, selectedId]);
+    if (listingSnapshot.current.repositoryError && !repositoryTask.current) {
+      commitListing({ ...listingSnapshot.current, repositoryError: null });
+    }
+    setSelectionState("loading");
+    const controller = new AbortController();
+    selectionRequest.current = controller;
+    const active = () => !controller.signal.aborted && selectionRequest.current === controller && window.location.pathname === "/analyze";
+    const task = (async () => {
+      // The child route may request its query selection before the provider's
+      // initial effect starts. Let that effect create the shared first-page task.
+      await Promise.resolve();
+      const pending = repositoryTask.current;
+      if (pending) await pending;
+      while (active()) {
+        const current = listingSnapshot.current;
+        if (current.repositories.some((repository) => repository.id === id)) {
+          commitSelectedId(id);
+          setSelectionState("ready");
+          return;
+        }
+        if (current.repositoryError) {
+          setSelectionState("error");
+          setSelectionError(current.repositoryError);
+          return;
+        }
+        if (current.page > 0 && !current.hasNextPage) {
+          setSelectionState("error");
+          setSelectionError("selection.notFound");
+          return;
+        }
+        commitListing({ ...current, loadingMore: current.page > 0 });
+        const next = await loadRepositories(current.page + 1, controller.signal);
+        if (!active()) return;
+        if (!next) {
+          setSelectionState("error");
+          setSelectionError(listingSnapshot.current.repositoryError ?? "selection.failed");
+          return;
+        }
+      }
+    })().finally(() => {
+      if (selectionRequest.current === controller) {
+        selectionRequest.current = null;
+        selectionTask.current = null;
+      }
+    });
+    selectionTask.current = { id, task };
+    return task;
+  }, [available, cancelAnalysis, cancelSelectionResolution, commitListing, commitSelectedId, loadRepositories, pathname]);
 
   const setGoal = useCallback((value: string) => {
     if (!available) return;
@@ -191,15 +328,17 @@ export function useRepositoryWorkspace(): RepositoryWorkspace {
   }, [available, cancelAnalysis]);
 
   const analyzeRepository = useCallback(async () => {
-    if (!available || !accountKey || !selectedRepository || analysisState === "done" || analysisRequest.current) return;
+    if (!available || pathname !== "/analyze" || window.location.pathname !== "/analyze" || !accountKey || !selectedRepository || analysisState === "done" || analysisRequest.current || selectionRequest.current) return;
     clearStoredAnalysis();
     const controller = new AbortController();
     analysisRequest.current = controller;
+    const requestLanguage = language;
+    setRequestedAnalysisLanguage(requestLanguage);
     setAnalysisState("loading");
     setAnalysisError(null);
     try {
-      const analysis = await analyzeGithubRepository(selectedRepository.id, goal, controller.signal);
-      if (controller.signal.aborted || analysisRequest.current !== controller) return;
+      const analysis = await analyzeGithubRepository(selectedRepository.id, goal, controller.signal, requestLanguage);
+      if (controller.signal.aborted || analysisRequest.current !== controller || window.location.pathname !== "/analyze") return;
       try {
         window.sessionStorage.setItem(GITHUB_ANALYSIS_STORAGE_KEY, JSON.stringify({
           accountKey,
@@ -208,40 +347,47 @@ export function useRepositoryWorkspace(): RepositoryWorkspace {
         }));
       } catch {
         setAnalysisState("error");
-        setAnalysisError("분석 결과를 보관하지 못했습니다. 브라우저의 저장소 사용을 허용한 뒤 다시 시도해 주세요.");
+        setAnalysisError("analysis.storage");
         return;
       }
       setAnalysisState("done");
       router.push("/connect/github/analysis");
     } catch (error) {
-      if (controller.signal.aborted || analysisRequest.current !== controller) return;
+      if (controller.signal.aborted || analysisRequest.current !== controller || window.location.pathname !== "/analyze") return;
       if (error instanceof ApiError && error.status === 401) {
         repositoryRequest.current?.abort();
+        cancelSelectionResolution();
         cancelAnalysis();
-        setListing(emptyListing());
-        setSelectedId(null);
+        commitListing(emptyListing());
+        commitSelectedId(null);
         updateGoal("");
         markUnauthenticated();
         return;
       }
       setAnalysisState("error");
-      setAnalysisError(analysisErrorMessage(error));
+      setAnalysisError(analysisErrorKey(error));
     } finally {
       if (analysisRequest.current === controller) analysisRequest.current = null;
     }
-  }, [accountKey, analysisState, available, cancelAnalysis, goal, markUnauthenticated, router, selectedRepository]);
+  }, [accountKey, analysisState, available, cancelAnalysis, cancelSelectionResolution, commitListing, commitSelectedId, goal, language, markUnauthenticated, pathname, router, selectedRepository]);
 
   return {
     ...(available ? listing : emptyListing()),
+    repositoryError: available ? workspaceErrorMessage(listing.repositoryError, language) : null,
+    repositoryPermissionError: available && listing.repositoryError === "repository.forbidden",
     refreshRepositories,
     loadMoreRepositories,
     selectedId: available ? selectedId : null,
     selectedRepository: available ? selectedRepository : null,
     selectRepository,
+    ensureRepositorySelected,
+    selectionState: available ? selectionState : "idle",
+    selectionError: available ? workspaceErrorMessage(selectionError, language) : null,
     goal: available ? goal : "",
     setGoal,
     analysisState: available ? analysisState : "idle",
-    analysisError: available ? analysisError : null,
+    analysisError: available ? workspaceErrorMessage(analysisError, language) : null,
+    requestedAnalysisLanguage: available ? requestedAnalysisLanguage : null,
     analyzeRepository,
     cancelAnalysis,
   };

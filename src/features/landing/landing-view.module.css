@@ -9,6 +9,9 @@
 .navigation a:hover, .textLink:hover, .footer > a:last-child:hover { color: #4058df; }
 .headerCta { display: inline-flex; min-height: 40px; align-items: center; gap: 16px; padding: 0 16px; border: 1px solid #dce2ef; border-radius: 7px; background: #fff; font-size: 12px; font-weight: 650; transition: border-color 160ms ease; }
 .headerCta:hover { border-color: #536cf4; }
+.headerActions { display: flex; flex-shrink: 0; align-items: center; gap: 12px; }
+.languageSwitcher { flex-shrink: 0; }
+.headerCtaShort { display: none; }
 .hero { display: grid; width: min(1200px, calc(100% - 80px)); grid-template-columns: 1.1fr 1fr; align-items: center; gap: 50px; margin: 0 auto; padding: 94px 0 88px; }
 .eyebrow { display: flex; align-items: center; gap: 9px; margin: 0; color: #536cf4; font-size: 10px; font-weight: 750; letter-spacing: 1.6px; line-height: 1.6; }
 .eyebrow > span { width: 6px; height: 6px; border-radius: 50%; background: #536cf4; box-shadow: 0 0 0 4px #edf0ff; }
@@ -129,7 +132,7 @@
 }
 @media (max-width: 650px) {
   .header, .hero, .contextStrip, .features, .finalCta, .footer { width: calc(100% - 40px); } .header { min-height: 76px; gap: 10px; } .brand { gap: 8px; font-size: 21px; } .brandMark { width: 30px; height: 30px; border-radius: 9px; } .brandMark svg { width: 18px; }
-  .navigation { display: none; } .headerCta { min-height: 36px; gap: 9px; padding: 0 11px; font-size: 10px; } .headerCta svg { width: 12px; }
+  .navigation { display: none; } .headerActions { gap: 8px; margin-left: auto; } .headerCta { min-height: 36px; gap: 6px; padding: 0 9px; font-size: 10px; white-space: nowrap; } .headerCta svg { width: 12px; } .headerCtaText { display: none; } .headerCtaShort { display: inline; }
   .hero { grid-template-columns: 1fr; gap: 46px; padding: 48px 0 50px; } .hero .eyebrow { font-size: 9px; } .hero h1 { margin: 23px 0 21px; font-size: clamp(37px, 8.7vw, 50px); letter-spacing: -1.8px; } .heroDescription { font-size: 13px; }
   .heroActions { flex-direction: row; align-items: center; gap: 20px; margin-top: 24px; } .primaryButton { min-height: 47px; padding: 0 15px; font-size: 11px; } .primaryButton > svg:last-child { margin-left: 3px; } .textLink { font-size: 11px; } .heroNote { font-size: 10px; }
   .heroVisual { width: min(100%, 440px); justify-self: center; transform: none; } .visualHeader { min-height: 40px; padding: 0 15px; gap: 12px; font-size: 8px; } .exampleLabel { font-size: 8px; } .visualBody { padding: 23px 23px 18px; }
@@ -145,4 +148,23 @@
   .analysisNote { align-items: flex-start; gap: 7px; margin-top: 34px; font-size: 9px; } .analysisNote svg { width: 14px; }
   .finalCta { align-items: flex-start; flex-direction: column; gap: 20px; margin: 50px auto; padding: 32px 25px; } .finalCta .eyebrow { font-size: 8px; letter-spacing: 1px; } .finalCta h2 { margin: 15px 0; font-size: 29px; } .finalCta p:last-child { margin-bottom: 0; font-size: 11px; }
   .lightButton { min-height: 45px; padding: 0 17px; font-size: 11px; } .ctaDecoration { top: 10px; right: -50px; } .footer { min-height: 115px; flex-wrap: wrap; gap: 8px 20px; padding: 22px 0; } .footerBrand { font-size: 18px; } .footer > p { min-width: calc(100% - 120px); margin: 0; font-size: 8px; } .footer > a:last-child { margin-left: auto; font-size: 10px; }
+}
+@media (max-width: 360px) {
+  .header { gap: 6px; }
+  .header .brand { gap: 6px; font-size: 18px; }
+  .header .brandMark { width: 27px; height: 27px; }
+  .headerActions { gap: 6px; }
+  .headerCta { padding: 0 7px; }
+  .headerCta svg { display: none; }
+  .contextStrip > div { gap: 4px; font-size: 8px; }
+  .contextStrip > div svg { flex-shrink: 0; width: 12px; }
+  .visualHeader { gap: 8px; padding: 0 11px; }
+  .visualBody { padding: 20px 16px 16px; }
+  .sourceFiles > span { gap: 4px; font-size: 8px; }
+  .sourceFiles svg { flex-shrink: 0; width: 11px; }
+  .outputCard { padding-right: 11px; padding-left: 11px; }
+  .outputTitle { gap: 8px; }
+  .outputTitle strong { font-size: 11px; }
+  .outputRow { gap: 5px; font-size: 9px; }
+  .outputRow b { font-size: 8px; }
 }

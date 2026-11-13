@@ -1,3 +1,5 @@
+import { isLanguage, type Language } from "@/lib/i18n/language";
+
 const configuredBase =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5001";
 
@@ -210,6 +212,7 @@ export async function fetchGithubRepositories(
 }
 
 export type GithubRepositoryAnalysis = {
+  language: Language;
   repository: {
     id: string;
     fullName: string;
@@ -314,7 +317,11 @@ export function parseGithubRepositoryAnalysis(
   const generatedAt = analysisString(root.generatedAt);
   if (!Number.isFinite(Date.parse(generatedAt)))
     throw new Error("Invalid analysis date");
+  // Results cached before language support were generated in Korean.
+  const language = root.language === undefined ? "ko" : root.language;
+  if (!isLanguage(language)) throw new Error("Invalid analysis language");
   return {
+    language,
     repository: {
       id,
       fullName,
@@ -387,8 +394,9 @@ export async function analyzeGithubRepository(
   repositoryId: string,
   goal = "",
   signal?: AbortSignal,
+  language: Language = "ko",
 ): Promise<GithubRepositoryAnalysis> {
-  if (!/^[1-9][0-9]{0,19}$/.test(repositoryId) || goal.length > 2000) {
+  if (!/^[1-9][0-9]{0,19}$/.test(repositoryId) || goal.length > 2000 || !isLanguage(language)) {
     throw new ApiError("Invalid repository analysis request", 400);
   }
   const trimmedGoal = goal.trim();
@@ -397,7 +405,7 @@ export async function analyzeGithubRepository(
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(trimmedGoal ? { goal: trimmedGoal } : {}),
+      body: JSON.stringify({ ...(trimmedGoal ? { goal: trimmedGoal } : {}), language }),
       signal,
     },
     120000,

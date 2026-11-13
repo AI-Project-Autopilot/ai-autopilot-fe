@@ -2,7 +2,7 @@
 
 import { ArrowRight, Check, ExternalLink, GitBranch, LoaderCircle, Sparkles } from "lucide-react";
 import { Button, Card } from "@/components/ui/primitives";
-import type { RepositoryWorkspace } from "./use-repository-workspace";
+import type { RepositoryWorkspace } from "@/features/dashboard/use-repository-workspace";
 import styles from "./repository-analysis-panel.module.css";
 
 export function RepositoryAnalysisPanel({ workspace }: { workspace: RepositoryWorkspace }) {
@@ -24,9 +24,9 @@ export function RepositoryAnalysisPanel({ workspace }: { workspace: RepositoryWo
           <a href={selectedRepository.htmlUrl} target="_blank" rel="noopener noreferrer">GitHub에서 보기 <ExternalLink size={12} aria-hidden="true" /></a>
         </div>
         <div className={styles.goalField}>
-          <label htmlFor="dashboard-analysis-goal">개발 목표 <small>선택 사항</small></label>
-          <textarea id="dashboard-analysis-goal" value={goal} onChange={(event) => setGoal(event.target.value)} rows={4} maxLength={2000} disabled={analyzing || openingResult} aria-describedby="dashboard-goal-help" placeholder="예: 로그인 흐름의 오류 처리를 개선하고 싶어요." />
-          <div className={styles.goalHelp} id="dashboard-goal-help"><span>비워 두면 저장소 전반의 개선 항목을 제안합니다.</span><span>{goal.length.toLocaleString("ko-KR")} / 2,000</span></div>
+          <label htmlFor="analysis-goal">개발 목표 <small>선택 사항</small></label>
+          <textarea id="analysis-goal" value={goal} onChange={(event) => setGoal(event.target.value)} rows={4} maxLength={2000} disabled={analyzing || openingResult} aria-describedby="analysis-goal-help" placeholder="예: 로그인 흐름의 오류 처리를 개선하고 싶어요." />
+          <div className={styles.goalHelp} id="analysis-goal-help"><span>비워 두면 저장소 전반의 개선 항목을 제안합니다.</span><span>{goal.length.toLocaleString("ko-KR")} / 2,000</span></div>
         </div>
         <p className={styles.consent}>분석을 시작하면 선택한 저장소의 README와 일부 소스 코드가 Meta 모델에 전달됩니다.</p>
         <Button className={styles.analyzeButton} disabled={analyzing || openingResult} onClick={() => void analyzeRepository()}>{analyzing || openingResult ? <LoaderCircle size={16} className={styles.spin} aria-hidden="true" /> : <Sparkles size={16} aria-hidden="true" />}{analyzing ? "저장소 분석 중…" : openingResult ? "분석 결과 여는 중…" : "선택한 저장소 분석하기"}{!analyzing && !openingResult && <ArrowRight size={15} aria-hidden="true" />}</Button>
