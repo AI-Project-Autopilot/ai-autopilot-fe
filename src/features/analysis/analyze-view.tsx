@@ -6,6 +6,7 @@ import { ArrowRight, FileCode2, FileText, GitBranch, ListChecks, LoaderCircle, R
 import { Button, Card, PageHeading } from "@/components/ui/primitives";
 import { useRepositoryWorkspaceContext } from "@/features/workspace/repository-workspace-context";
 import { RepositoryAnalysisPanel } from "./repository-analysis-panel";
+import { AnalysisHistory } from "./analysis-history";
 import styles from "./analyze-view.module.css";
 
 export function AnalyzeView({ repositoryId }: { repositoryId: string | null }) {
@@ -62,5 +63,6 @@ export function AnalyzeView({ repositoryId }: { repositoryId: string | null }) {
         <p className={styles.control}><ShieldCheck size={16} aria-hidden="true" /> 분석은 시작 버튼을 누를 때만 실행됩니다.</p>
       </Card>
     </div>
+    {canAnalyzeSelection && <AnalysisHistory key={selectedId} repositoryId={selectedId ?? undefined} />}
   </>;
 }

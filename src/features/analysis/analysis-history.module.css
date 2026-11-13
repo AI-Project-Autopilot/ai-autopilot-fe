@@ -1,0 +1,23 @@
+.history { margin-top:24px; min-width:0; }
+.card { padding:24px; }
+.heading { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; margin-bottom:20px; }
+.eyebrow { display:flex; align-items:center; gap:6px; color:var(--color-blue); font-size:10px; font-weight:700; letter-spacing:.08em; }
+.heading h2 { margin:9px 0 8px; font-size:19px; letter-spacing:-.03em; }
+.heading p { margin:0; color:var(--color-muted); font-size:12px; line-height:1.7; }
+.list { display:grid; gap:12px; list-style:none; padding:0; margin:0; }
+.item { display:grid; gap:12px; padding:18px; border:1px solid var(--color-line); border-radius:11px; min-width:0; }
+.itemHeading { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px; }
+.itemHeading strong { font-size:14px; line-height:1.5; overflow-wrap:anywhere; }
+.goal { display:grid; gap:5px; margin:0; font-size:13px; line-height:1.7; white-space:pre-wrap; overflow-wrap:anywhere; }
+.goal span { color:var(--color-muted); font-size:10px; font-weight:600; }
+.summary { display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; margin:0; color:var(--color-muted); font-size:12px; line-height:1.7; overflow-wrap:anywhere; }
+.itemFooter { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; }
+.itemFooter time { color:var(--color-muted); font-size:11px; }
+.resultLink { display:inline-flex; align-items:center; gap:5px; color:var(--color-blue-dark); font-size:12px; font-weight:700; }
+.resultLink:hover { text-decoration:underline; }
+.feedback { display:flex; align-items:center; justify-content:center; gap:12px; flex-wrap:wrap; padding:20px 0; margin:0; text-align:center; color:var(--color-muted); font-size:13px; line-height:1.8; }
+.feedback p { margin:0; }
+.more { display:flex; justify-content:center; margin-top:18px; }
+.spin { animation:spin 1s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+@media(max-width:600px) { .card { padding:18px; } .heading { flex-wrap:wrap; gap:8px; } .item { padding:14px; } }

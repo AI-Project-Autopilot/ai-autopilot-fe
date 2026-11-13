@@ -1,6 +1,7 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { Suspense, useEffect, useState, useSyncExternalStore } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { getGithubAccountKey, GithubSessionGate, GithubSessionProvider, useGithubSession } from "@/components/auth/github-session";
 import { useLanguage } from "@/components/i18n/language-provider";
@@ -13,13 +14,21 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import {
+  ApiError,
+  fetchGithubAnalysis,
   GITHUB_ANALYSIS_STORAGE_KEY,
   parseGithubRepositoryAnalysis,
   type GithubRepositoryAnalysis,
 } from "@/lib/api/github-connect-api";
 import styles from "../page.module.css";
 
-type ResultState = "loading" | "ready" | "missing" | "invalid";
+type ResultState = "loading" | "ready" | "missing" | "invalid" | "notFound" | "error" | "running" | "failed" | "cancelled";
+type AnalysisResult = {
+  state: ResultState;
+  analysis: GithubRepositoryAnalysis | null;
+  goal?: string;
+  repositoryId?: string;
+};
 type RecommendationPriority = GithubRepositoryAnalysis["recommendations"][number]["priority"];
 
 const priorityStyles: Record<RecommendationPriority, string> = {
@@ -76,21 +85,75 @@ function parseStoredAnalysis(stored: string | null, accountKey: string | null): 
   }
 }
 
-function GithubAnalysisResult() {
+function LegacyAnalysisResult() {
   const { user } = useGithubSession();
+  const stored = useSyncExternalStore(
+    subscribeToAnalysisStorage,
+    getStoredAnalysis,
+    getServerAnalysisSnapshot,
+  );
+  const result = parseStoredAnalysis(stored, getGithubAccountKey(user));
+  return <AnalysisResultView {...result} saved={false} />;
+}
+
+function SavedAnalysisResult({ analysisId }: { analysisId: string }) {
+  const { markUnauthenticated } = useGithubSession();
+  const [result, setResult] = useState<AnalysisResult>({ state: "loading", analysis: null });
+  const [attempt, setAttempt] = useState(0);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void fetchGithubAnalysis(analysisId, controller.signal).then((record) => {
+      if (controller.signal.aborted) return;
+      setResult({
+        state: record.status === "succeeded" ? (record.result ? "ready" : "invalid") : record.status,
+        analysis: record.status === "succeeded" ? record.result : null,
+        goal: record.goal,
+        repositoryId: record.repositoryId,
+      });
+    }).catch((error: unknown) => {
+      if (controller.signal.aborted) return;
+      if (error instanceof ApiError && error.status === 401) {
+        markUnauthenticated();
+        return;
+      }
+      setResult({
+        state: error instanceof ApiError && error.status === 404 ? "notFound" : "error",
+        analysis: null,
+      });
+    });
+    return () => controller.abort();
+  }, [analysisId, attempt, markUnauthenticated]);
+
+  function retry() {
+    setResult({ state: "loading", analysis: null });
+    setAttempt((current) => current + 1);
+  }
+
+  return <AnalysisResultView {...result} saved onRetry={retry} />;
+}
+
+function GithubAnalysisResult() {
+  const searchParams = useSearchParams();
+  const { user } = useGithubSession();
+  const analysisIds = searchParams.getAll("analysisId");
+  if (analysisIds.length === 0) return <LegacyAnalysisResult />;
+  if (analysisIds.length !== 1 || !/^c[a-z0-9]{24}$/.test(analysisIds[0])) {
+    return <AnalysisResultView state="invalid" analysis={null} saved />;
+  }
+  return <SavedAnalysisResult key={`${getGithubAccountKey(user)}:${analysisIds[0]}`} analysisId={analysisIds[0]} />;
+}
+
+function AnalysisResultView({ state, analysis, goal, repositoryId, saved, onRetry }: AnalysisResult & {
+  saved: boolean;
+  onRetry?: () => void;
+}) {
   const { t, locale } = useLanguage();
   const priorityLabels: Record<RecommendationPriority, string> = {
     high: t("높음", "High"),
     medium: t("보통", "Medium"),
     low: t("낮음", "Low"),
   };
-  const stored = useSyncExternalStore(
-    subscribeToAnalysisStorage,
-    getStoredAnalysis,
-    getServerAnalysisSnapshot,
-  );
-  const { state, analysis } = parseStoredAnalysis(stored, getGithubAccountKey(user));
-
   return (
     <main className={styles.screen}>
       <div className={styles.container}>
@@ -104,8 +167,17 @@ function GithubAnalysisResult() {
           <h1>{t("저장소 분석 결과", "Repository analysis results")}</h1>
 
           {state === "loading" && <div className={styles.loading} role="status"><LoaderCircle className={styles.spin} size={18} /> {t("분석 결과를 불러오고 있어요…", "Loading your analysis results…")}</div>}
-          {state === "missing" && <div className={styles.alert} role="alert">{t("이 브라우저 세션에서 분석 결과를 찾을 수 없습니다. 저장소 목록에서 대상을 선택해 다시 분석해 주세요.", "No analysis result was found in this browser session. Choose a repository and run an analysis again.")}</div>}
-          {state === "invalid" && <div className={styles.alert} role="alert">{t("분석 결과를 표시할 수 없습니다. 저장소 목록에서 대상을 선택해 다시 분석해 주세요.", "This analysis result cannot be displayed. Choose a repository and run an analysis again.")}</div>}
+          {state === "missing" && <div className={styles.alert} role="alert">{t("이 탭에 보관된 분석 결과가 없습니다. 대시보드에서 저장된 분석 기록을 확인해 주세요.", "No analysis result is cached in this tab. Open the dashboard to view your saved analysis history.")}</div>}
+          {state === "invalid" && <div className={styles.alert} role="alert">{t("분석 결과 주소 또는 데이터가 올바르지 않습니다. 대시보드의 분석 기록에서 다시 열어 주세요.", "The analysis address or data is invalid. Open the result again from your dashboard history.")}</div>}
+
+          {state === "notFound" && <div className={styles.alert} role="alert">{t("이 분석 기록을 찾을 수 없거나 접근 권한이 없습니다.", "This analysis was not found or is not accessible to your account.")}</div>}
+          {state === "error" && <div className={styles.alert} role="alert">{t("저장된 분석 결과를 불러오지 못했습니다. 다시 시도해 주세요.", "Could not load the saved analysis. Please try again.")}</div>}
+          {state === "running" && <div className={styles.loading} role="status">{t("아직 분석이 진행 중입니다. 잠시 후 다시 확인해 주세요.", "This analysis is still running. Check again shortly.")}</div>}
+          {state === "failed" && <div className={styles.alert} role="alert">{t("이 분석은 실패하여 결과가 생성되지 않았습니다. 새 분석을 시작해 주세요.", "This analysis failed and has no result. Start a new analysis to try again.")}</div>}
+          {state === "cancelled" && <div className={styles.alert} role="status">{t("이 분석은 취소되었습니다. 필요하면 새 분석을 시작해 주세요.", "This analysis was cancelled. Start a new analysis when you are ready.")}</div>}
+          {onRetry && (state === "error" || state === "running") && <button className={styles.secondaryButton} type="button" onClick={onRetry}>{t("다시 확인", "Try again")}</button>}
+          {goal !== undefined && <div className={styles.contextDetails}><strong>{t("분석 요청 목표", "Requested development goal")}</strong><p>{goal || t("목표 없이 저장소 전반을 분석했습니다.", "The analysis covered the repository without a specific goal.")}</p></div>}
+          {(state === "failed" || state === "cancelled") && repositoryId && <Link className={styles.secondaryButton} href={`/analyze?repositoryId=${encodeURIComponent(repositoryId)}`}>{t("이 저장소 다시 분석하기", "Analyze this repository again")}</Link>}
 
           {analysis && state === "ready" && <section className={styles.analysisResults} aria-labelledby="analysis-results-heading">
             <div className={styles.resultHeading}>
@@ -142,12 +214,12 @@ function GithubAnalysisResult() {
 
           <Link className={styles.secondaryButton} href="/repositories"><ArrowLeft size={16} /> {t("저장소 목록으로 돌아가기", "Back to repositories")}</Link>
         </div>
-        <footer className={styles.footer}><ShieldCheck size={16} /> {t("이 화면의 분석 결과는 현재 브라우저 탭에 보관됩니다.", "This result view is stored in the current browser tab.")} <Link href="/dashboard">{t("대시보드로 이동", "Open dashboard")}</Link></footer>
+        <footer className={styles.footer}><ShieldCheck size={16} /> {saved ? t("분석 결과는 계정에 저장되어 다시 열 수 있습니다.", "Saved analyses stay with your account and can be reopened.") : t("이전 분석 결과를 현재 탭의 보관본에서 표시하고 있습니다.", "This older result is shown from the copy cached in this tab.")} <Link href="/dashboard">{t("대시보드로 이동", "Open dashboard")}</Link></footer>
       </div>
     </main>
   );
 }
 
 export default function GithubAnalysisPage() {
-  return <GithubSessionProvider><GithubSessionGate><GithubAnalysisResult /></GithubSessionGate></GithubSessionProvider>;
+  return <GithubSessionProvider><GithubSessionGate><Suspense fallback={<AnalysisResultView state="loading" analysis={null} saved />}><GithubAnalysisResult /></Suspense></GithubSessionGate></GithubSessionProvider>;
 }

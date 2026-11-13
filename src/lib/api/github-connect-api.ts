@@ -13,6 +13,7 @@ export const GITHUB_ENDPOINTS = {
   me: "/api/auth/me",
   logout: "/api/auth/logout",
   repositories: "/api/github/repositories",
+  analyses: "/api/github/analyses",
 } as const;
 
 export const GITHUB_ANALYSIS_STORAGE_KEY = "github-analysis-result";
@@ -212,6 +213,7 @@ export async function fetchGithubRepositories(
 }
 
 export type GithubRepositoryAnalysis = {
+  analysisId: string | null;
   language: Language;
   repository: {
     id: string;
@@ -320,7 +322,15 @@ export function parseGithubRepositoryAnalysis(
   // Results cached before language support were generated in Korean.
   const language = root.language === undefined ? "ko" : root.language;
   if (!isLanguage(language)) throw new Error("Invalid analysis language");
+  let analysisId: string | null = null;
+  if (root.analysisId !== undefined) {
+    if (typeof root.analysisId !== "string" || !/^c[a-z0-9]{24}$/.test(root.analysisId)) {
+      throw new Error("Invalid analysis ID");
+    }
+    analysisId = root.analysisId;
+  }
   return {
+    analysisId,
     language,
     repository: {
       id,
@@ -388,6 +398,90 @@ export function parseGithubRepositoryAnalysis(
       warnings: analysisStringList(context.warnings),
     },
   };
+}
+
+export type GithubAnalysisSummary = {
+  id: string;
+  repositoryId: string;
+  goal: string;
+  status: "running" | "succeeded" | "failed" | "cancelled";
+  fullName: string | null;
+  summary: string | null;
+  createdAt: string;
+  completedAt: string | null;
+  errorCode: string | null;
+};
+
+export type GithubAnalysisPage = {
+  items: GithubAnalysisSummary[];
+  page: number;
+  perPage: number;
+  hasNextPage: boolean;
+};
+
+function parseAnalysisSummary(value: unknown): GithubAnalysisSummary {
+  const row = analysisRecord(value);
+  if (
+    typeof row.id !== "string" || !/^c[a-z0-9]{24}$/.test(row.id) ||
+    typeof row.repositoryId !== "string" || !/^[1-9][0-9]{0,19}$/.test(row.repositoryId) ||
+    typeof row.goal !== "string" || row.goal.length > 2000 ||
+    (row.status !== "running" && row.status !== "succeeded" && row.status !== "failed" && row.status !== "cancelled") ||
+    (row.fullName !== null && typeof row.fullName !== "string") ||
+    (row.summary !== null && typeof row.summary !== "string") ||
+    typeof row.createdAt !== "string" || !Number.isFinite(Date.parse(row.createdAt)) ||
+    (row.completedAt !== null && (typeof row.completedAt !== "string" || !Number.isFinite(Date.parse(row.completedAt)))) ||
+    (row.errorCode !== null && typeof row.errorCode !== "string")
+  ) throw new Error("Invalid saved analysis metadata");
+  return {
+    id: row.id,
+    repositoryId: row.repositoryId,
+    goal: row.goal,
+    status: row.status,
+    fullName: row.fullName,
+    summary: row.summary,
+    createdAt: row.createdAt,
+    completedAt: row.completedAt,
+    errorCode: row.errorCode,
+  };
+}
+
+export async function fetchGithubAnalyses(
+  repositoryId?: string,
+  page = 1,
+  signal?: AbortSignal,
+): Promise<GithubAnalysisPage> {
+  if (!Number.isSafeInteger(page) || page < 1 || page > 999999 ||
+    (repositoryId !== undefined && !/^[1-9][0-9]{0,19}$/.test(repositoryId))) {
+    throw new ApiError("Invalid saved analysis request", 400);
+  }
+  const query = new URLSearchParams({ page: String(page) });
+  if (repositoryId !== undefined) query.set("repositoryId", repositoryId);
+  const response = await request(`${GITHUB_ENDPOINTS.analyses}?${query}`, { signal });
+  const data = analysisRecord(await response.json());
+  if (!Array.isArray(data.items) || data.page !== page || data.perPage !== 20 ||
+    typeof data.hasNextPage !== "boolean") throw new Error("Invalid saved analysis page");
+  const items = data.items.map(parseAnalysisSummary);
+  if (repositoryId !== undefined && items.some((item) => item.repositoryId !== repositoryId)) {
+    throw new Error("Saved analyses do not match selected repository");
+  }
+  return { items, page, perPage: data.perPage, hasNextPage: data.hasNextPage };
+}
+
+export async function fetchGithubAnalysis(
+  analysisId: string,
+  signal?: AbortSignal,
+): Promise<GithubAnalysisSummary & { result: GithubRepositoryAnalysis | null }> {
+  if (!/^c[a-z0-9]{24}$/.test(analysisId)) throw new ApiError("Invalid analysis ID", 400);
+  const response = await request(`${GITHUB_ENDPOINTS.analyses}/${encodeURIComponent(analysisId)}`, { signal });
+  const data = analysisRecord(await response.json());
+  const summary = parseAnalysisSummary(data);
+  if (summary.id !== analysisId) throw new Error("Saved analysis does not match requested ID");
+  const result = data.result === null ? null : parseGithubRepositoryAnalysis(data.result, summary.repositoryId);
+  if ((summary.status === "succeeded" && result === null) ||
+    (result !== null && (result.analysisId !== summary.id || result.repository.fullName !== summary.fullName))) {
+    throw new Error("Saved analysis result does not match its metadata");
+  }
+  return { ...summary, result };
 }
 
 export async function analyzeGithubRepository(
