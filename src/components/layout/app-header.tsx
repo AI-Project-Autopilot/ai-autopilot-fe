@@ -14,7 +14,8 @@ export function AppHeader() {
   const { status, user, logout, loggingOut, logoutError } = useGithubSession();
   const pageLabel = pathname === "/dashboard" ? t("대시보드", "Overview")
     : pathname === "/repositories" ? t("저장소", "Repositories")
-    : pathname === "/analyze" ? t("새 분석", "New analysis") : t("프로젝트", "Project");
+    : pathname === "/analyze" ? t("새 분석", "New analysis")
+    : pathname === "/tasks" || pathname.startsWith("/tasks/") ? t("선택한 작업", "Selected tasks") : t("프로젝트", "Project");
 
   return <header className={styles.header}>
     <div className={styles.breadcrumb}><span>{t("워크스페이스", "Workspace")}</span><span className={styles.separator}>/</span><strong>{pageLabel}</strong></div>

@@ -30,6 +30,8 @@ Copy `.env.example` to `.env.local` when preparing a local backend connection. `
 - `/dashboard` shows GitHub connection status, real repository summary counts, shortcuts, and saved analysis history
 - `/repositories` lists, searches, and selects accessible GitHub repositories
 - `/analyze` selects a repository, accepts an optional development goal, and starts or cancels analysis
+- `/tasks` lists saved recommendation tasks and their progress
+- `/tasks/[taskId]` reopens a task, its issue link, recovery actions, and progress controls
 - `/connect/github` handles GitHub sign-in and automatically returns authenticated users to `/dashboard`
 - `/connect/github/analysis?analysisId=<id>` loads a saved analysis from the backend after checking the session; URLs without an ID support older tab-cached results
 - `/auth/github/callback`
@@ -60,3 +62,29 @@ Public and private repository access is granted through GitHub's OAuth consent s
 - The pre-existing, unused `public/*.svg` scaffold files are from the official `create-next-app` template (MIT template source); Next.js and Vercel brand marks remain subject to their owners' terms. They are not referenced by this app.
 
 Package details and licenses: [Next.js](https://github.com/vercel/next.js), [React](https://github.com/facebook/react), [TypeScript](https://github.com/microsoft/TypeScript), [ESLint](https://github.com/eslint/eslint), and [Lucide](https://github.com/lucide-icons/lucide).
+
+
+## Selected recommendation tasks
+
+Each saved analysis recommendation has a **Create GitHub issue for this task**
+action. Pressing it saves the selected recommendation and immediately creates an
+issue in the analyzed repository, then opens `/tasks/:taskId` for tracking. Reusing
+the same recommendation preserves the saved task and reuses its issue. If creation
+fails, the result card links to the saved task so the work can be recovered.
+
+The task screen can edit content before publication, save manual progress, link an
+existing issue, and refresh GitHub state. A closed issue marks the task completed
+(or cancelled for `not_planned`); reopening it returns the task to in progress.
+These states do not automatically verify implementation or test acceptance criteria.
+Task status edits do not close or edit GitHub issues.
+
+All task API calls use the authenticated session under `/api/github/tasks`, with
+selection under `/api/github/analyses/:analysisId/tasks`. Result cards select and
+then create the issue; selecting through the API alone only persists the task.
+Ambiguous GitHub responses are reconciled by the server without another create
+request, and an existing issue number can be linked explicitly for recovery.
+
+The repositories screen shows a saved-task panel for the selected repository.
+It loads only owner-selected `TrackedTask` records filtered by `repositoryId`,
+including progress and linked issue state. Unselected AI recommendations remain
+in the analysis result, and switching repositories resets the task query.

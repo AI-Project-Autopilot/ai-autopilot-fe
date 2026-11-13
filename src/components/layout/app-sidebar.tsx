@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowUpRight, CirclePlus, Command, GitBranch, LayoutDashboard } from "lucide-react";
+import { ArrowUpRight, CirclePlus, Command, GitBranch, LayoutDashboard, ListChecks } from "lucide-react";
 import { useGithubSession } from "@/components/auth/github-session";
 import { useLanguage } from "@/components/i18n/language-provider";
 import styles from "./app-sidebar.module.css";
@@ -10,6 +10,7 @@ import styles from "./app-sidebar.module.css";
 const navigation = [
   { href: "/dashboard", ko: "대시보드", en: "Overview", icon: LayoutDashboard },
   { href: "/repositories", ko: "저장소", en: "Repositories", icon: GitBranch },
+  { href: "/tasks", ko: "선택한 작업", en: "Selected tasks", icon: ListChecks },
   { href: "/analyze", ko: "새 분석", en: "New analysis", icon: CirclePlus },
   { href: "/connect/github", ko: "GitHub 연결", en: "GitHub connection", icon: GitBranch },
 ];

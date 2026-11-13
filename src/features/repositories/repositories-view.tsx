@@ -6,6 +6,7 @@ import { ArrowRight, CheckCircle2, ExternalLink, GitBranch, LoaderCircle, LockKe
 import { useLanguage } from "@/components/i18n/language-provider";
 import { Button, Card, PageHeading } from "@/components/ui/primitives";
 import { useRepositoryWorkspaceContext } from "@/features/workspace/repository-workspace-context";
+import { TaskList } from "@/features/tasks/task-list";
 import { getGithubLoginUrl } from "@/lib/api/github-connect-api";
 import styles from "./repositories-view.module.css";
 
@@ -25,7 +26,7 @@ export function RepositoriesView() {
   const permissionLink = <a className={styles.inlineLink} href={getGithubLoginUrl()}>{t("GitHub 권한 다시 승인", "Reauthorize GitHub access")} <ArrowRight size={14} aria-hidden="true" /></a>;
 
   return <>
-    <PageHeading eyebrow={t("내 GITHUB 저장소", "YOUR REPOSITORIES")} title={t("저장소", "Repositories")} description={t("분석할 GitHub 저장소를 선택하세요. 다음 화면에서 개발 목표를 정하고 분석을 시작할 수 있어요.", "Choose a GitHub repository to analyze. Set your development goal and start the analysis on the next screen.")} actions={<Button variant="secondary" onClick={() => void refreshRepositories()} disabled={repositoryState === "loading" || loadingMore}><RefreshCw size={15} aria-hidden="true" /> {t("목록 새로고침", "Refresh list")}</Button>} />
+    <PageHeading eyebrow={t("내 GITHUB 저장소", "YOUR REPOSITORIES")} title={t("저장소", "Repositories")} description={t("저장소별로 내가 선택한 작업과 GitHub 이슈를 확인하고, 새 분석을 시작하세요.", "See your selected tasks and GitHub issues for each repository, or start a new analysis.")} actions={<Button variant="secondary" onClick={() => void refreshRepositories()} disabled={repositoryState === "loading" || loadingMore}><RefreshCw size={15} aria-hidden="true" /> {t("목록 새로고침", "Refresh list")}</Button>} />
     {repositoryState === "loading" && <Card className={styles.feedback}><LoaderCircle size={24} className={styles.spin} aria-hidden="true" /><p role="status">{t("GitHub 저장소를 불러오고 있어요…", "Loading GitHub repositories…")}</p></Card>}
     {repositoryState === "error" && <Card className={styles.feedback}><GitBranch size={28} aria-hidden="true" /><h2>{t("저장소를 불러올 수 없어요", "Could not load repositories")}</h2><p role="alert">{repositoryError}</p><div className={styles.feedbackActions}><Button variant="secondary" onClick={() => void refreshRepositories()}><RefreshCw size={15} aria-hidden="true" /> {t("다시 불러오기", "Try again")}</Button>{repositoryPermissionError && permissionLink}</div></Card>}
     {repositoryState === "ready" && <>
@@ -66,9 +67,10 @@ export function RepositoriesView() {
             {selectedRepository.description && <p className={styles.summaryDescription}>{selectedRepository.description}</p>}
             <dl className={styles.summaryMeta}><div><dt>{t("기본 브랜치", "Default branch")}</dt><dd>{selectedRepository.defaultBranch || t("없음", "None")}</dd></div><div><dt>{t("공개 범위", "Visibility")}</dt><dd>{selectedRepository.isPrivate ? t("비공개", "Private") : t("공개", "Public")}</dd></div>{selectedRepository.language && <div><dt>{t("주요 언어", "Main language")}</dt><dd>{selectedRepository.language}</dd></div>}</dl>
             <a className={styles.inlineLink} href={selectedRepository.htmlUrl} target="_blank" rel="noopener noreferrer">{t("GitHub에서 보기", "View on GitHub")} <ExternalLink size={13} aria-hidden="true" /></a>
-            <div className={styles.nextStep}><p>{t("이 저장소의 개발 목표를 입력하고 분석을 시작하세요.", "Set a development goal for this repository and start the analysis.")}</p><Button href={`/analyze?repositoryId=${encodeURIComponent(selectedRepository.id)}`}>{t("이 저장소 분석하기", "Analyze this repository")} <ArrowRight size={15} aria-hidden="true" /></Button></div>
+            <div className={styles.nextStep}><a className={styles.inlineLink} href="#selected-repository-tasks">{t("이 저장소의 선택한 작업 보기", "View selected tasks for this repository")} <ArrowRight size={14} aria-hidden="true" /></a><p>{t("이 저장소의 개발 목표를 입력하고 분석을 시작하세요.", "Set a development goal for this repository and start the analysis.")}</p><Button href={`/analyze?repositoryId=${encodeURIComponent(selectedRepository.id)}`}>{t("이 저장소 분석하기", "Analyze this repository")} <ArrowRight size={15} aria-hidden="true" /></Button></div>
           </> : <div className={styles.noSelection}><p>{t("목록에서 분석할 저장소를 선택해 주세요.", "Select a repository from the list to analyze.")}</p><span>{t("선택 후 새 분석 화면으로 이동할 수 있어요.", "Then continue to the new analysis screen.")}</span></div>}
         </Card>
+        {selectedRepository && <section id="selected-repository-tasks" className={styles.repositoryTasks} aria-label={t(`${selectedRepository.fullName}에서 선택한 작업`, `Selected tasks for ${selectedRepository.fullName}`)}><TaskList repositoryId={selectedRepository.id} /></section>}
       </div>
       {selectedRepository && clientReady && createPortal(<aside className={styles.mobileAction} aria-label={t("선택한 저장소의 새 분석으로 이동", "Start a new analysis for the selected repository")}><div><span>{t("선택한 저장소", "Selected repository")}</span><strong title={selectedRepository.fullName}>{selectedRepository.fullName}</strong></div><Button className={styles.mobileCta} href={`/analyze?repositoryId=${encodeURIComponent(selectedRepository.id)}`}>{t("이 저장소 분석하기", "Analyze repository")} <ArrowRight size={14} aria-hidden="true" /></Button></aside>, document.body)}
     </>}

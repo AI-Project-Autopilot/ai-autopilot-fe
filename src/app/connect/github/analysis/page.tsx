@@ -20,6 +20,7 @@ import {
   parseGithubRepositoryAnalysis,
   type GithubRepositoryAnalysis,
 } from "@/lib/api/github-connect-api";
+import { RecommendationTaskAction } from "@/features/tasks/recommendation-task-action";
 import styles from "../page.module.css";
 
 type ResultState = "loading" | "ready" | "missing" | "invalid" | "notFound" | "error" | "running" | "failed" | "cancelled";
@@ -199,6 +200,7 @@ function AnalysisResultView({ state, analysis, goal, repositoryId, saved, onRetr
                 <a className={styles.inlineLink} href={evidence.url} target="_blank" rel="noopener noreferrer">{t("해당 커밋의 파일에서 확인", "View the file at this commit")} <ExternalLink size={13} /></a>
                 <pre><code>{evidence.excerpt}</code></pre>
               </details>)}</>}
+              <RecommendationTaskAction analysisId={analysis.analysisId} recommendationId={recommendation.id} />
             </li>)}</ol>
             <details className={styles.contextDetails}>
               <summary>{t(`분석에 사용한 파일 ${analysis.context.filesRead.length.toLocaleString(locale)}개 확인`, `View ${analysis.context.filesRead.length.toLocaleString(locale)} files used in this analysis`)}</summary>

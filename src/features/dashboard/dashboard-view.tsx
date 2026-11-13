@@ -8,6 +8,7 @@ import { Button, Card, PageHeading } from "@/components/ui/primitives";
 import { useRepositoryWorkspaceContext } from "@/features/workspace/repository-workspace-context";
 import { getGithubLoginUrl } from "@/lib/api/github-connect-api";
 import { AnalysisHistory } from "@/features/analysis/analysis-history";
+import { TaskList } from "@/features/tasks/task-list";
 import styles from "./dashboard-view.module.css";
 
 export function DashboardView() {
@@ -45,6 +46,7 @@ export function DashboardView() {
       <Card className={styles.nextStep}><span className={styles.stepIcon}><GitBranch size={21} aria-hidden="true" /></span><h2>{t("분석할 저장소 찾기", "Find a repository to analyze")}</h2><p>{t("접근 가능한 저장소를 살펴보고 분석할 프로젝트를 선택하세요.", "Browse accessible repositories and choose a project to analyze.")}</p><Button href="/repositories" variant="secondary">{t("저장소로 이동", "Go to repositories")} <ArrowRight size={14} /></Button></Card>
       <Card className={styles.nextStep}><span className={`${styles.stepIcon} ${styles.analysisIcon}`}><Sparkles size={21} aria-hidden="true" /></span><h2>{t("새 분석 시작하기", "Start a new analysis")}</h2><p>{t("저장소와 개발 목표를 정하고 코드에 근거한 개선 방향을 확인하세요.", "Choose a repository and development goal to explore improvements grounded in code.")}</p><Button href="/analyze" variant="secondary">{t("새 분석으로 이동", "Go to new analysis")} <ArrowRight size={14} /></Button></Card>
     </div>
+    <TaskList compact />
     <AnalysisHistory />
   </>;
 }
